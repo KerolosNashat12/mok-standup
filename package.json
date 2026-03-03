@@ -1,0 +1,13 @@
+{
+  "name": "standup-dashboard",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "cors": "^2.8.5"
+  }
+}
