@@ -13,340 +13,259 @@ const SLACK_TOKEN = process.env.SLACK_TOKEN || "";
 const PORT = process.env.PORT || 3000;
 
 const PROJECTS = [
-  { id: "C0ADWK5LGT1", name: "CairoLive",  color: "#e85d4a" },
-  { id: "C0AB6NQ061X", name: "Al Nasser",  color: "#34d399" },
+  { id: "C0ADWK5LGT1", name: "CairoLive", color: "#e85d4a" },
+  { id: "C0AB6NQ061X", name: "Al Nasser", color: "#34d399" },
   { id: "C0ABM2D50LE", name: "Print Out",  color: "#a78bfa" },
   { id: "C0AC25HP64T", name: "Turbo",       color: "#fbbf24" },
 ];
 const STANDUP_CHANNEL = "C0AK4KTKV2S";
 
-// HARDCODED user map — never fails, always returns real names
-const KNOWN_USERS = {
-  "U0AATPYJBFU": { name: "Kerolos Nashat",       avatar: null },
-  "U0AAQBA8WDB": { name: "Mok",                   avatar: null },
-  "U0AAMD052JF": { name: "Vera",                  avatar: null },
-  "U0AAXCAPSR2": { name: "Seaf Gamel",            avatar: null },
-  "U0AAMD008BD": { name: "Ezzledeen Fathy",       avatar: null },
-  "U0AACB004SK": { name: "Zain ul Abideen",       avatar: null },
-  "U0AACAZ7V0X": { name: "Islam Khairy",          avatar: null },
-  "U0AD8KWQ9MG": { name: "Abdullah Hosny",        avatar: null },
-  "U0AACB0NDHV": { name: "Mohamed Abd Elkhalek",  avatar: null },
-  "U0AACAZKFAB": { name: "Islam Ayman",           avatar: null },
-  "U0AAQG9F11T": { name: "Kerolos Morkos",        avatar: null },
-  "U0AB6MYHDK3": { name: "Mohamed Salah",         avatar: null },
-  "U0AH569FATW": { name: "Rao Taha",              avatar: null },
-  "U0ABA01GDL1": { name: "Gourav Kumar",          avatar: null },
-  "U0AAXCCJ89J": { name: "Mohamed Atya",          avatar: null },
+// ── Hardcoded user map ────────────────────────────────────────────────────────
+const USERS = {
+  "U0AATPYJBFU": "Kerolos Nashat",
+  "U0AAQBA8WDB": "Mok",
+  "U0AAMD052JF": "Vera",
+  "U0AAXCAPSR2": "Seaf Gamel",
+  "U0AAMD008BD": "Ezzledeen Fathy",
+  "U0AACB004SK": "Zain ul Abideen",
+  "U0AACAZ7V0X": "Islam Khairy",
+  "U0AD8KWQ9MG": "Abdullah Hosny",
+  "U0AACB0NDHV": "Mohamed Abd Elkhalek",
+  "U0AACAZKFAB": "Islam Ayman",
+  "U0AAQG9F11T": "Kerolos Morkos",
+  "U0AB6MYHDK3": "Mohamed Salah",
+  "U0AH569FATW": "Rao Taha",
+  "U0ABA01GDL1": "Gourav Kumar",
+  "U0AAXCCJ89J": "Mohamed Atya",
 };
 
-// Project membership for team tab
-const PROJECT_MEMBERS = {
+// ── Static project membership ──────────────────────────────────────────────
+const PROJ_MEMBERS = {
   "CairoLive": ["U0AATPYJBFU","U0AAMD052JF","U0AB6MYHDK3","U0AACAZ7V0X","U0AAQG9F11T"],
   "Al Nasser": ["U0AACB004SK","U0AAMD008BD","U0AAXCAPSR2","U0AACAZ7V0X","U0AAMD052JF"],
-  "Print Out": ["U0AACB0NDHV","U0AD8KWQ9MG","U0AAXCAPSR2","U0AACAZKFAB"],
-  "Turbo":     ["U0AACAZ7V0X","U0AAMD052JF","U0AB6MYHDK3","U0AATPYJBFU","U0AAQG9F11T"],
+  "Print Out":  ["U0AACB0NDHV","U0AD8KWQ9MG","U0AAXCAPSR2","U0AACAZKFAB","U0AAQBA8WDB"],
+  "Turbo":      ["U0AACAZ7V0X","U0AAMD052JF","U0AB6MYHDK3","U0AATPYJBFU","U0AAQG9F11T"],
 };
 
 let cache = { lastUpdated: null, projects: [], standup: [], team: {} };
+let avatars = {};  // uid → avatar url
 
-// Dynamic avatar cache (fetched from Slack API when possible)
-var avatarCache = {};
-
-function slackGet(endpoint) {
-  return new Promise(function(resolve, reject) {
-    var opts = {
-      hostname: "slack.com",
-      path: "/api/" + endpoint,
-      headers: { Authorization: "Bearer " + SLACK_TOKEN },
-    };
-    https.get(opts, function(res) {
-      var d = "";
-      res.on("data", function(c) { d += c; });
-      res.on("end", function() {
-        try { resolve(JSON.parse(d)); } catch(e) { reject(e); }
-      });
-    }).on("error", reject);
+// ── HTTP helper ────────────────────────────────────────────────────────────
+function slackGet(ep) {
+  return new Promise((res, rej) => {
+    const opts = { hostname:"slack.com", path:"/api/"+ep, headers:{Authorization:"Bearer "+SLACK_TOKEN} };
+    https.get(opts, r => {
+      let d=""; r.on("data",c=>d+=c); r.on("end",()=>{ try{res(JSON.parse(d));}catch(e){rej(e);} });
+    }).on("error",rej);
   });
 }
 
-// Resolve user — hardcoded first, then API fallback
-async function getUser(uid) {
-  if (!uid) return { name: "Unknown", avatar: null };
+// ── Resolve name + avatar ─────────────────────────────────────────────────
+function userName(uid) { return USERS[uid] || uid || "Unknown"; }
+function userAvatar(uid) { return avatars[uid] || null; }
 
-  // Use hardcoded name, try cached avatar
-  var known = KNOWN_USERS[uid];
-  var avatar = avatarCache[uid] || null;
-
-  if (known) return { name: known.name, avatar: avatar };
-
-  // Unknown user — try API
-  try {
-    var r = await slackGet("users.info?user=" + uid);
-    if (r.ok && r.user) {
-      var p = r.user.profile || {};
-      var name = p.display_name || r.user.real_name || r.user.name || uid;
-      if (p.image_48) avatarCache[uid] = p.image_48;
-      return { name: name, avatar: p.image_48 || null };
-    }
-  } catch(e) {}
-  return { name: uid, avatar: null };
-}
-
-// Try to load avatars for known users (best-effort)
 async function loadAvatars() {
-  var uids = Object.keys(KNOWN_USERS);
-  for (var i = 0; i < uids.length; i++) {
-    if (avatarCache[uids[i]]) continue;
+  for (const uid of Object.keys(USERS)) {
+    if (avatars[uid]) continue;
     try {
-      var r = await slackGet("users.info?user=" + uids[i]);
-      if (r.ok && r.user && r.user.profile && r.user.profile.image_48) {
-        avatarCache[uids[i]] = r.user.profile.image_48;
-      }
+      const r = await slackGet("users.info?user="+uid);
+      if (r.ok && r.user && r.user.profile && r.user.profile.image_48)
+        avatars[uid] = r.user.profile.image_48;
     } catch(e) {}
   }
-  console.log("Avatars loaded: " + Object.keys(avatarCache).length);
 }
 
-// Clean Slack text: remove tags, fix entities, resolve mentions
-function cleanText(raw) {
+// ── Clean Slack text ──────────────────────────────────────────────────────
+function clean(raw) {
   if (!raw) return "";
-  var s = raw;
-  // user mentions with display name
-  s = s.replace(/<@([A-Z0-9]+)\|([^>]+)>/g, function(m, uid, name) {
-    var u = KNOWN_USERS[uid];
-    return "@" + (u ? u.name : name);
-  });
-  // user mentions without display name
-  s = s.replace(/<@([A-Z0-9]+)>/g, function(m, uid) {
-    var u = KNOWN_USERS[uid];
-    return "@" + (u ? u.name : uid);
-  });
-  // links with text
+  let s = raw;
+  s = s.replace(/<@([A-Z0-9]+)\|([^>]+)>/g, (_,uid,n) => "@"+(USERS[uid]||n));
+  s = s.replace(/<@([A-Z0-9]+)>/g,           (_,uid)   => "@"+(USERS[uid]||uid));
   s = s.replace(/<([^|>]+)\|([^>]+)>/g, "$2");
-  s = s.replace(/<(https?:[^>]+)>/g, "$1");
-  // HTML entities
-  s = s.replace(/&amp;/g, "&");
-  s = s.replace(/&lt;/g, "<");
-  s = s.replace(/&gt;/g, ">");
-  s = s.replace(/&quot;/g, '"');
-  s = s.replace(/&#39;/g, "'");
-  // Remove leftover angle-bracket tags
-  s = s.replace(/<[^>]+>/g, "");
+  s = s.replace(/<https?:[^>]+>/g, "");
+  s = s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"');
+  s = s.replace(/<[^>]+>/g,"");
   return s.trim();
 }
 
-function hasBlockerWord(t) {
-  var words = ["block", "stuck", "bug", "error", "not work", "issue", "fail", "broken",
-               "problem", "crash", "cannot", "can't", "500", "failing", "مشكلة"];
-  var low = t.toLowerCase();
-  for (var i = 0; i < words.length; i++) {
-    if (low.indexOf(words[i]) >= 0) return true;
-  }
-  return false;
-}
-
-function startsWithNumber(line) {
-  var i = 0;
-  while (i < line.length && line[i] >= "0" && line[i] <= "9") i++;
-  return i > 0 && i < line.length && line[i] === ".";
-}
-
-function fmtTs(ts) {
-  var d = new Date(parseFloat(ts) * 1000);
+// ── Format timestamp ───────────────────────────────────────────────────────
+function fmt(ts) {
+  const d = new Date(parseFloat(ts)*1000);
   return {
-    date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-    time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-    iso: d.toISOString()
+    date: d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),
+    time: d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),
+    iso:  d.toISOString(),
   };
 }
 
-// Parse standup format ✅ Yesterday / 🎯 Today / 🚨 Blockers
-function parseStandup(text, user, dt) {
-  var result = { user: user.name, avatar: user.avatar || avatarCache[user.id] || null,
-                 date: dt.date, time: dt.time, ts: dt.iso,
-                 yesterday: null, today: null, blockers: null, raw: text };
-  var lines = text.split("\n");
-  var current = null, buf = [];
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (!line) continue;
-    var low = line.toLowerCase();
-    if (line.indexOf("✅") >= 0 || low.indexOf("yesterday") >= 0) {
-      if (current && buf.length) result[current] = buf.join(" ").trim();
-      current = "yesterday";
-      buf = [line.replace(/✅/g,"").replace(/yesterday\s*[:：]?\s*/i,"").trim()];
-    } else if (line.indexOf("🎯") >= 0 || low.indexOf("today") >= 0) {
-      if (current && buf.length) result[current] = buf.join(" ").trim();
-      current = "today";
-      buf = [line.replace(/🎯/g,"").replace(/today\s*[:：]?\s*/i,"").trim()];
-    } else if (line.indexOf("🚨") >= 0 || low.indexOf("blocker") >= 0) {
-      if (current && buf.length) result[current] = buf.join(" ").trim();
-      current = "blockers";
-      buf = [line.replace(/🚨/g,"").replace(/blockers?\s*[:：]?\s*/i,"").trim()];
-    } else if (current) {
-      buf.push(line);
-    }
+// ── Detect tasks: any message with 2+ list items (numbered OR bullet) ─────
+function extractTasks(text) {
+  const lines = text.split("\n");
+  const items = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    // numbered: "1." "2." etc — even if same number repeated
+    const num = line.match(/^\d+[\.\)]\s+(.+)/);
+    if (num && num[1].length > 5) { items.push(num[1].trim()); continue; }
+    // lettered sub-items: "a." "b." etc
+    const letter = line.match(/^[a-eA-E][\.\)]\s+(.+)/);
+    if (letter && letter[1].length > 5) { items.push("  → "+letter[1].trim()); continue; }
+    // bullet: "- " or "• "
+    const bullet = line.match(/^[-•]\s+(.+)/);
+    if (bullet && bullet[1].length > 5) { items.push(bullet[1].trim()); }
   }
-  if (current && buf.length) result[current] = buf.join(" ").trim();
-  return result;
+  return items.length >= 2 ? items : [];
 }
 
-async function fetchStandup() {
-  var resp = await slackGet("conversations.history?channel=" + STANDUP_CHANNEL + "&limit=200");
-  if (!resp.ok) { console.log("Standup error:", resp.error); return []; }
-  var msgs = resp.messages || [];
-  var standups = [];
-  for (var i = 0; i < msgs.length; i++) {
-    var m = msgs[i];
-    if (!m.text || m.bot_id || m.subtype) continue;
-    var text = cleanText(m.text);
-    if (text.length < 8) continue;
-    var u = await getUser(m.user);
-    u.id = m.user;
-    var dt = fmtTs(m.ts);
-    standups.push(parseStandup(text, u, dt));
-  }
-  return standups;
+// ── Detect blockers ────────────────────────────────────────────────────────
+function isBlocker(t) {
+  const words = ["block","stuck","bug","error","not work","issue","fail","broken",
+                 "problem","crash","cannot","can't","500","مشكلة"];
+  const low = t.toLowerCase();
+  return words.some(w => low.includes(w));
 }
 
-async function parseMessages(messages) {
-  var tasks = [], blockers = [];
-  for (var i = 0; i < messages.length; i++) {
-    var msg = messages[i];
-    if (!msg.text || msg.bot_id || msg.subtype) continue;
-    var text = cleanText(msg.text);
-    if (!text || text.length < 10) continue;
-    var dt = fmtTs(msg.ts);
-    var user = await getUser(msg.user);
-
-    // TASKS: numbered lists (2+ items)
-    var lines = text.split("\n");
-    var numbered = [];
-    for (var j = 0; j < lines.length; j++) {
-      var line = lines[j].trim();
-      if (startsWithNumber(line) && line.length > 8) numbered.push(line);
-    }
-    if (numbered.length >= 2) {
-      for (var k = 0; k < numbered.length; k++) {
-        var dot = numbered[k].indexOf(".");
-        var clean = numbered[k].substring(dot + 1).trim();
-        if (clean.length > 5) {
-          tasks.push({ text: clean, date: dt.date, time: dt.time, iso: dt.iso,
-                       from: user.name, fromAvatar: user.avatar || avatarCache[msg.user] || null, uid: msg.user });
-        }
-      }
-    }
-
-    // BLOCKERS
-    if (hasBlockerWord(text) && text.length > 25) {
-      blockers.push({ text: text.substring(0, 400), date: dt.date, time: dt.time, iso: dt.iso,
-                      user: user.name, avatar: user.avatar || avatarCache[msg.user] || null, uid: msg.user });
-    }
+// ── Parse standup format ───────────────────────────────────────────────────
+function parseStandup(text, uid, dt) {
+  const base = { uid, name:userName(uid), avatar:userAvatar(uid),
+                 date:dt.date, time:dt.time, ts:dt.iso,
+                 yesterday:null, today:null, blockers:null, raw:text };
+  const lines = text.split("\n");
+  let cur=null, buf=[];
+  for (const raw of lines) {
+    const line = raw.trim(); if (!line) continue;
+    const low = line.toLowerCase();
+    if (line.includes("✅")||low.includes("yesterday")) {
+      if(cur&&buf.length) base[cur]=buf.join(" ").trim();
+      cur="yesterday"; buf=[line.replace(/✅/g,"").replace(/yesterday\s*[:：]?\s*/i,"").trim()];
+    } else if (line.includes("🎯")||low.includes("today")) {
+      if(cur&&buf.length) base[cur]=buf.join(" ").trim();
+      cur="today"; buf=[line.replace(/🎯/g,"").replace(/today\s*[:：]?\s*/i,"").trim()];
+    } else if (line.includes("🚨")||low.includes("blocker")) {
+      if(cur&&buf.length) base[cur]=buf.join(" ").trim();
+      cur="blockers"; buf=[line.replace(/🚨/g,"").replace(/blockers?\s*[:：]?\s*/i,"").trim()];
+    } else if (cur) { buf.push(line); }
   }
-  return { tasks: tasks, blockers: blockers };
+  if(cur&&buf.length) base[cur]=buf.join(" ").trim();
+  return base;
 }
 
+// ── Main fetch ─────────────────────────────────────────────────────────────
 async function fetchAll() {
   console.log("Fetching", new Date().toISOString());
+  loadAvatars().catch(()=>{});  // async, don't block
 
-  // Load avatars (async, non-blocking for data)
-  loadAvatars().catch(function() {});
+  const results = [];
 
-  var results = [];
-
-  for (var p = 0; p < PROJECTS.length; p++) {
-    var proj = PROJECTS[p];
+  for (const proj of PROJECTS) {
     try {
-      var resp = await slackGet("conversations.history?channel=" + proj.id + "&limit=100");
+      const resp = await slackGet("conversations.history?channel="+proj.id+"&limit=200");
       if (!resp.ok) {
-        console.log("Channel error", proj.name, resp.error);
-        results.push(Object.assign({}, proj, { members:[], tasks:[], blockers:[], recentActivity:[], messageCount:0, error: resp.error }));
+        console.log("Error", proj.name, resp.error);
+        results.push({...proj, members:[], tasks:[], blockers:[], recentActivity:[], messageCount:0, error:resp.error});
         continue;
       }
-      var msgs = resp.messages || [];
+      const msgs = resp.messages || [];
+      const allTasks=[], allBlockers=[];
 
-      // Members from project membership map
-      var memberIds = PROJECT_MEMBERS[proj.name] || [];
-      var members = memberIds.map(function(uid) {
-        return { id: uid, name: (KNOWN_USERS[uid]||{name:uid}).name, avatar: avatarCache[uid]||null };
-      });
+      for (const m of msgs) {
+        if (!m.text||m.bot_id||m.subtype) continue;
+        const text = clean(m.text);
+        if (!text||text.length<8) continue;
+        const dt = fmt(m.ts);
+        const name = userName(m.user);
+        const avatar = userAvatar(m.user);
 
-      var parsed = await parseMessages(msgs);
+        // Tasks
+        const items = extractTasks(text);
+        if (items.length) {
+          for (const item of items) {
+            allTasks.push({ text:item, date:dt.date, time:dt.time, iso:dt.iso,
+                            from:name, avatar, uid:m.user });
+          }
+        }
 
-      // Recent activity (last 24h)
-      var cutoff = Date.now() - 86400000;
-      var recent = [];
-      for (var i = 0; i < msgs.length && recent.length < 4; i++) {
-        var m = msgs[i];
-        if (parseFloat(m.ts) * 1000 > cutoff && m.text && !m.bot_id && !m.subtype) {
-          var u2 = await getUser(m.user);
-          var dt2 = fmtTs(m.ts);
-          recent.push({ text: cleanText(m.text).substring(0, 200),
-                        date: dt2.date, time: dt2.time, iso: dt2.iso,
-                        user: u2.name, avatar: avatarCache[m.user]||null });
+        // Blockers
+        if (isBlocker(text) && text.length>25) {
+          allBlockers.push({ text:text.substring(0,400), date:dt.date, time:dt.time, iso:dt.iso,
+                              user:name, avatar, uid:m.user });
         }
       }
 
-      results.push(Object.assign({}, proj, {
-        members: members,
-        tasks: parsed.tasks.slice(0, 30),
-        blockers: parsed.blockers.slice(0, 15),
-        recentActivity: recent,
-        messageCount: msgs.length,
-        lastMessage: msgs[0] ? fmtTs(msgs[0].ts).iso : null,
-        error: null,
+      // Recent activity last 48h
+      const cutoff = Date.now()-172800000;
+      const recent=[];
+      for (const m of msgs) {
+        if (recent.length>=5) break;
+        if (parseFloat(m.ts)*1000 > cutoff && m.text && !m.bot_id && !m.subtype) {
+          const dt2=fmt(m.ts);
+          recent.push({ text:clean(m.text).substring(0,200), date:dt2.date, time:dt2.time, iso:dt2.iso,
+                        user:userName(m.user), avatar:userAvatar(m.user) });
+        }
+      }
+
+      // Members from static map
+      const members = (PROJ_MEMBERS[proj.name]||[]).map(uid => ({
+        id:uid, name:userName(uid), avatar:userAvatar(uid)
       }));
-      console.log("OK", proj.name, msgs.length, "msgs,", parsed.tasks.length, "tasks,", parsed.blockers.length, "blockers");
+
+      results.push({...proj,
+        members, messageCount:msgs.length,
+        tasks:allTasks.slice(0,40),
+        blockers:allBlockers.slice(0,15),
+        recentActivity:recent,
+        lastMessage: msgs[0] ? fmt(msgs[0].ts).iso : null,
+        error:null,
+      });
+      console.log(proj.name, msgs.length, "msgs |", allTasks.length, "tasks |", allBlockers.length, "blockers");
     } catch(err) {
       console.log("ERR", proj.name, err.message);
-      results.push(Object.assign({}, proj, { members:[], tasks:[], blockers:[], recentActivity:[], messageCount:0, error: err.message }));
+      results.push({...proj, members:[], tasks:[], blockers:[], recentActivity:[], messageCount:0, error:err.message});
     }
   }
 
-  // Build team map from hardcoded project membership
-  var teamMap = {};
-  Object.keys(PROJECT_MEMBERS).forEach(function(projName) {
-    var uids = PROJECT_MEMBERS[projName];
-    uids.forEach(function(uid) {
-      if (!teamMap[uid]) {
-        teamMap[uid] = {
-          id: uid,
-          name: (KNOWN_USERS[uid]||{name:uid}).name,
-          avatar: avatarCache[uid]||null,
-          projects: [],
-          blockerCount: 0
-        };
+  // Standup channel
+  let standup=[];
+  try {
+    const sr = await slackGet("conversations.history?channel="+STANDUP_CHANNEL+"&limit=200");
+    if (sr.ok) {
+      for (const m of sr.messages||[]) {
+        if (!m.text||m.bot_id||m.subtype) continue;
+        const text=clean(m.text);
+        if (text.length<8) continue;
+        standup.push(parseStandup(text, m.user, fmt(m.ts)));
       }
-      teamMap[uid].projects.push(projName);
-    });
-  });
-  // Count blockers
-  results.forEach(function(proj) {
-    (proj.blockers||[]).forEach(function(b) {
-      if (b.uid && teamMap[b.uid]) teamMap[b.uid].blockerCount++;
-    });
-  });
+    }
+  } catch(e) { console.log("Standup err", e.message); }
 
-  var standup = await fetchStandup();
-  cache = { lastUpdated: new Date().toISOString(), projects: results, standup: standup, team: teamMap };
+  // Team map from static membership
+  const team={};
+  for (const [projName, uids] of Object.entries(PROJ_MEMBERS)) {
+    for (const uid of uids) {
+      if (!team[uid]) team[uid]={ id:uid, name:userName(uid), avatar:userAvatar(uid), projects:[], blockerCount:0 };
+      team[uid].projects.push(projName);
+    }
+  }
+  // Add blocker counts
+  for (const p of results) {
+    for (const b of (p.blockers||[])) {
+      if (b.uid && team[b.uid]) team[b.uid].blockerCount++;
+    }
+  }
+
+  cache = { lastUpdated:new Date().toISOString(), projects:results, standup, team };
+  console.log("Done. Standup:", standup.length, "| Team:", Object.keys(team).length);
   return cache;
 }
 
-app.get("/api/data", async function(req, res) {
-  try { if (!cache.lastUpdated) await fetchAll(); res.json(cache); }
-  catch(e) { res.status(500).json({ error: e.message }); }
-});
+// ── Routes ─────────────────────────────────────────────────────────────────
+app.get("/api/data",    async (q,s) => { try { if(!cache.lastUpdated) await fetchAll(); s.json(cache); } catch(e){ s.status(500).json({error:e.message}); }});
+app.post("/api/refresh",async (q,s) => { try { const d=await fetchAll(); s.json({ok:true,lastUpdated:d.lastUpdated}); } catch(e){ s.status(500).json({error:e.message}); }});
+app.get("/api/health",  (q,s) => s.json({status:"ok",lastUpdated:cache.lastUpdated}));
+app.get("*",            (q,s) => s.sendFile(path.join(__dirname,"public","index.html")));
 
-app.post("/api/refresh", async function(req, res) {
-  try { var d = await fetchAll(); res.json({ success: true, lastUpdated: d.lastUpdated }); }
-  catch(e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get("/api/health", function(req, res) { res.json({ status: "ok", lastUpdated: cache.lastUpdated }); });
-app.get("*", function(req, res) { res.sendFile(path.join(__dirname, "public", "index.html")); });
-
-// Refresh every 2 minutes
-cron.schedule("*/2 * * * *", function() { fetchAll().catch(console.error); });
+// Refresh every 2 min
+cron.schedule("*/2 * * * *", () => fetchAll().catch(console.error));
 
 fetchAll().catch(console.error);
-app.listen(PORT, function() { console.log("Running on port", PORT); });
+app.listen(PORT, () => console.log("Port", PORT));
