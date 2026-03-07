@@ -2,234 +2,428 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Mok Company — Standup</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Mok Company — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#06080d;--s1:#0c0f18;--s2:#111520;--s3:#181d2e;
-  --b1:rgba(255,255,255,0.05);--b2:rgba(255,255,255,0.09);--b3:rgba(255,255,255,0.14);
-  --tx:#d8dfef;--m1:#505878;--m2:#6e7a96;
-  --blue:#4f9cf9;--green:#34d399;--red:#f87171;--amber:#fbbf24;--purple:#a78bfa;
-  --c0:#e85d4a;--c1:#34d399;--c2:#a78bfa;--c3:#fbbf24;
+:root {
+  --ink: #08090d;
+  --paper: #0f1117;
+  --card: #13161f;
+  --card2: #191d28;
+  --line: rgba(255,255,255,0.07);
+  --line2: rgba(255,255,255,0.12);
+  --dim: #374060;
+  --muted: #5a6480;
+  --body: #9ba3be;
+  --text: #d4daf0;
+  --white: #eef1fb;
+  --blue:   #3b82f6;
+  --green:  #22c55e;
+  --red:    #ef4444;
+  --amber:  #f59e0b;
+  --violet: #8b5cf6;
+  --cyan:   #06b6d4;
+  --c0: #f97316;
+  --c1: #10b981;
+  --c2: #8b5cf6;
+  --c3: #eab308;
 }
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;font-size:13.5px;min-height:100vh;overflow-x:hidden}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
 
-/* grid bg */
-body::before{content:'';position:fixed;inset:0;
-  background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);
-  background-size:52px 52px;pointer-events:none;z-index:0}
-/* glow orbs */
-.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
-.o1{width:700px;height:700px;background:#4f9cf9;opacity:.055;top:-280px;right:-180px}
-.o2{width:500px;height:500px;background:#a78bfa;opacity:.05;bottom:-200px;left:-150px}
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NOISE LAYER ── */
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+/* ── SCANLINE ── */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
 
 /* ── HEADER ── */
-header{position:sticky;top:0;z-index:200;height:58px;
-  background:rgba(6,8,13,.92);backdrop-filter:blur(24px);
-  border-bottom:1px solid var(--b2);padding:0 28px;
-  display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.4px;
-  display:flex;align-items:center;gap:9px;z-index:1}
-.logo-icon{width:28px;height:28px;border-radius:7px;
-  background:linear-gradient(135deg,var(--blue),var(--purple));
-  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
-.logo-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--m1);font-weight:400;margin-left:2px}
-.hdr-right{display:flex;align-items:center;gap:10px;z-index:1}
-.live-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
-  background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);
-  color:var(--green);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.8px}
-.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 6px var(--green);animation:pulse 1.6s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
-.upd{font-family:'DM Mono',monospace;font-size:10px;color:var(--m1)}
-.refbtn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;
-  background:var(--blue);color:#fff;border:none;cursor:pointer;
-  font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all .15s}
-.refbtn:hover{background:#3d87e4;transform:translateY(-1px);box-shadow:0 4px 18px rgba(79,156,249,.3)}
-.refbtn.loading svg{animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+header {
+  position: sticky; top:0; z-index:200;
+  height: 56px;
+  background: rgba(8,9,13,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  position: relative; z-index:1;
+}
+.logo-badge {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue'; font-size: 16px; color: #fff; letter-spacing: 1px;
+}
+.logo-name {
+  font-family: 'Bebas Neue';
+  font-size: 18px; letter-spacing: 2px; color: var(--white);
+}
+.logo-slash { color: var(--dim); margin: 0 2px; }
+.logo-sub {
+  font-family: 'JetBrains Mono'; font-size: 10px;
+  color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+}
+.hdr-right { display:flex; align-items:center; gap:10px; z-index:1; }
+.hdr-time {
+  font-family: 'JetBrains Mono'; font-size: 11px; color: var(--muted);
+  background: var(--card); border: 1px solid var(--line);
+  padding: 5px 10px; border-radius: 6px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+}
+.hdr-time .t-date { font-size: 9px; color: var(--dim); }
+.live-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(34,197,94,0.07);
+  border: 1px solid rgba(34,197,94,0.2);
+  color: var(--green);
+  padding: 5px 12px; border-radius: 20px;
+  font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 1.5px;
+}
+.live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: livepulse 1.8s ease-in-out infinite;
+}
+@keyframes livepulse {
+  0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 8px var(--green)}
+  50%{opacity:.4;transform:scale(.7);box-shadow:0 0 4px var(--green)}
+}
+.upd-txt { font-family:'JetBrains Mono'; font-size:10px; color:var(--dim); }
+.refbtn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 15px; border-radius: 7px;
+  background: var(--blue); color: #fff; border: none; cursor: pointer;
+  font-family: 'Space Grotesk'; font-size: 12px; font-weight: 600;
+  letter-spacing: .3px; transition: all .15s;
+}
+.refbtn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,.35); }
+.refbtn.loading svg { animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── MAIN ── */
-main{position:relative;z-index:1;padding:22px 28px;max-width:1640px;margin:0 auto}
+main { position: relative; z-index:1; padding: 24px 28px; max-width: 1680px; margin: 0 auto; }
 
-/* ── STATS ROW ── */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:22px}
-.stat{background:var(--s1);border:1px solid var(--b1);border-radius:11px;
-  padding:15px 18px;position:relative;overflow:hidden;transition:border-color .2s}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cc,var(--blue));opacity:.55}
-.stat:hover{border-color:var(--b2)}
-.stat-lbl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.8px;color:var(--m1);margin-bottom:7px}
-.stat-val{font-family:'Syne',sans-serif;font-size:27px;font-weight:800;line-height:1;color:var(--cc,var(--tx))}
-.stat-sub{font-size:11px;color:var(--m2);margin-top:4px}
+/* ── STATS BAR ── */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(5,1fr); gap: 12px;
+  margin-bottom: 28px;
+}
+.stat {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px 20px;
+  position: relative; overflow: hidden; cursor: default;
+  transition: border-color .2s, transform .2s;
+}
+.stat:hover { border-color: var(--line2); transform: translateY(-2px); }
+.stat-accent {
+  position: absolute; top:0; left:0; right:0; height:2px;
+  background: var(--sc, var(--blue)); opacity: .7;
+}
+.stat-lbl {
+  font-family: 'JetBrains Mono'; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px;
+}
+.stat-val {
+  font-family: 'Bebas Neue'; font-size: 36px; line-height: 1;
+  color: var(--sc, var(--text)); letter-spacing: 1px;
+}
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
 /* ── TABS ── */
-.tabs{display:flex;gap:2px;background:var(--s1);border:1px solid var(--b1);
-  padding:3px;border-radius:9px;width:fit-content;margin-bottom:22px}
-.tab{padding:7px 17px;border-radius:6px;border:none;background:transparent;
-  color:var(--m1);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
-  transition:all .15s;white-space:nowrap;letter-spacing:.1px}
-.tab.on{background:var(--s3);color:var(--tx);box-shadow:0 1px 6px rgba(0,0,0,.35)}
-.tab:hover:not(.on){color:var(--tx)}
+.tab-bar {
+  display: flex; gap: 1px; background: var(--card); border: 1px solid var(--line);
+  padding: 3px; border-radius: 10px; width: fit-content; margin-bottom: 26px;
+}
+.tab {
+  padding: 8px 18px; border-radius: 7px; border: none; background: transparent;
+  color: var(--muted); cursor: pointer; font-family: 'Space Grotesk';
+  font-size: 12px; font-weight: 500; transition: all .15s; white-space: nowrap;
+  letter-spacing: .2px;
+}
+.tab.on { background: var(--card2); color: var(--white); box-shadow: 0 1px 8px rgba(0,0,0,.4); }
+.tab:hover:not(.on) { color: var(--text); }
 
-/* ── SECTION HEADER ── */
-.sh{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--m1);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.sh::after{content:'';flex:1;height:1px;background:var(--b2)}
+/* ── SECTION LABEL ── */
+.sec-lbl {
+  font-family: 'JetBrains Mono'; font-size: 9px; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-lbl::after { content:''; flex:1; height:1px; background: var(--line2); }
 
-/* ── PROJECT GRID ── */
-.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
-@media(max-width:1100px){.pgrid{grid-template-columns:1fr}}
+/* ══════════════════════════════════════════════════════════
+   OVERVIEW — full redesign
+══════════════════════════════════════════════════════════ */
+.overview-grid {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: 16px;
+}
+@media(max-width:1100px){ .overview-grid { grid-template-columns: 1fr; } }
 
-/* ── PROJECT CARD ── */
-.pc{background:var(--s1);border:1px solid var(--b1);border-radius:13px;overflow:hidden;
-  position:relative;transition:all .2s}
-.pc:hover{border-color:var(--b2);transform:translateY(-1px);box-shadow:0 10px 36px rgba(0,0,0,.28)}
-.pc-bar{position:absolute;left:0;top:0;bottom:0;width:3px}
-.pc-top{padding:15px 18px 12px 20px;border-bottom:1px solid var(--b1);
-  display:flex;align-items:center;justify-content:space-between}
-.pc-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
-  display:flex;align-items:center;gap:9px}
-.pc-dot{width:8px;height:8px;border-radius:50%}
-.pc-tags{display:flex;gap:5px;flex-wrap:wrap}
-.tag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 8px;
-  border-radius:20px;font-weight:500;border:1px solid transparent}
-.tag-blue{background:rgba(79,156,249,.08);color:var(--blue);border-color:rgba(79,156,249,.15)}
-.tag-red{background:rgba(248,113,113,.08);color:var(--red);border-color:rgba(248,113,113,.18)}
-.tag-green{background:rgba(52,211,153,.08);color:var(--green);border-color:rgba(52,211,153,.15)}
+.proj-block {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; overflow: hidden; position: relative;
+  transition: border-color .2s, box-shadow .2s;
+}
+.proj-block:hover { border-color: var(--line2); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
 
-/* ── MEMBER CHIPS ── */
-.pc-members{padding:9px 18px 9px 20px;border-bottom:1px solid var(--b1);
-  display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:40px}
-.chip{display:flex;align-items:center;gap:4px;background:var(--s2);
-  border:1px solid var(--b1);padding:2px 8px 2px 3px;border-radius:20px;font-size:11px;transition:border-color .15s}
-.chip:hover{border-color:var(--b2)}
+/* Top colored strip */
+.proj-strip {
+  height: 3px; background: var(--pc);
+}
 
-/* ── AVATARS ── */
-.av{border-radius:50%;object-fit:cover;flex-shrink:0}
-.avp{border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-family:'DM Mono',monospace;font-weight:500;color:#fff;flex-shrink:0;font-size:9px}
+/* Header row */
+.proj-hdr {
+  padding: 16px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.proj-title {
+  display: flex; align-items: center; gap: 10px;
+}
+.proj-orb {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--pc); box-shadow: 0 0 10px var(--pc);
+  animation: orborb 3s ease-in-out infinite;
+}
+@keyframes orborb {
+  0%,100%{box-shadow:0 0 10px var(--pc),0 0 20px var(--pc)33}
+  50%{box-shadow:0 0 6px var(--pc)}
+}
+.proj-name { font-family:'Bebas Neue'; font-size:20px; letter-spacing:2px; color:var(--white); }
+.proj-meta { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.mtag {
+  font-family:'JetBrains Mono'; font-size:10px; padding:2px 9px;
+  border-radius:20px; font-weight:500; border:1px solid transparent;
+}
+.mtag-msg { background:rgba(59,130,246,.08); color:var(--blue); border-color:rgba(59,130,246,.18); }
+.mtag-blk { background:rgba(239,68,68,.08); color:var(--red); border-color:rgba(239,68,68,.18); }
+.mtag-ok  { background:rgba(34,197,94,.08); color:var(--green); border-color:rgba(34,197,94,.18); }
+.mtag-err { background:rgba(239,68,68,.08); color:var(--red); border-color:rgba(239,68,68,.18); }
 
-/* ── MINI STATS ── */
-.pc-body{padding:13px 18px 16px 20px}
-.mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px}
-.mini{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;text-align:center}
-.mini-v{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;line-height:1}
-.mini-l{font-family:'DM Mono',monospace;font-size:9px;color:var(--m1);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+/* Member row */
+.proj-members {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-height: 42px;
+}
+.mchip {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--card2); border: 1px solid var(--line);
+  padding: 2px 8px 2px 3px; border-radius: 20px; font-size: 11px;
+  transition: border-color .15s; cursor: default;
+}
+.mchip:hover { border-color: var(--line2); }
 
-/* ── ACTIVITY ── */
-.act-list{display:flex;flex-direction:column;gap:5px}
-.act-item{display:flex;gap:8px;padding:8px 10px;background:var(--s2);
-  border-radius:7px;border:1px solid var(--b1);align-items:flex-start;transition:border-color .15s}
-.act-item:hover{border-color:var(--b2)}
-.act-body{flex:1;min-width:0}
-.act-user{font-weight:600;font-size:11px;color:var(--blue);margin-bottom:2px}
-.act-txt{font-size:11px;color:var(--m2);line-height:1.55;word-break:break-word}
-.act-dt{font-family:'DM Mono',monospace;font-size:9px;color:var(--m1);margin-top:3px}
-.no-act{font-size:11px;color:var(--m1);font-style:italic;padding:5px 2px;text-align:center}
+/* Stats + Activity body */
+.proj-body { padding: 14px 20px 18px; }
 
-/* ── STANDUP ── */
-.su-list{display:flex;flex-direction:column;gap:10px}
-.su-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
-.su-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--b1)}
-.su-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
-.su-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--m1);margin-left:auto;text-align:right;line-height:1.6}
-.su-body{padding:13px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(max-width:900px){.su-body{grid-template-columns:1fr}}
-.su-sec{background:var(--s2);border-radius:8px;padding:10px 13px;border:1px solid var(--b1)}
-.su-sec-lbl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.su-sec-txt{font-size:12px;color:var(--m2);line-height:1.65}
-.su-raw{padding:12px 16px;font-size:12px;color:var(--m2);line-height:1.7;border-top:1px solid var(--b1)}
-.su-empty{padding:44px;text-align:center;color:var(--m1);font-size:12.5px;line-height:2}
-.su-fmt{font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);line-height:2}
+.kpi-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.kpi {
+  background: var(--card2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; text-align: center;
+}
+.kpi-val { font-family:'Bebas Neue'; font-size:22px; line-height:1; }
+.kpi-lbl { font-family:'JetBrains Mono'; font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1.2px; margin-top:3px; }
 
-/* ── TASK CARDS ── */
-.task-list{display:flex;flex-direction:column;gap:8px}
-.task-card{background:var(--s1);border:1px solid var(--b1);border-radius:11px;
-  display:flex;gap:13px;padding:13px 16px 13px 14px;position:relative;overflow:hidden;
-  transition:all .15s;align-items:flex-start}
-.task-card:hover{border-color:var(--b2);background:var(--s2)}
-.task-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc)}
-.task-n{font-family:'DM Mono',monospace;font-size:11px;color:var(--m1);min-width:22px;margin-top:1px;flex-shrink:0}
-.task-body{flex:1;min-width:0}
-.task-txt{font-size:13px;line-height:1.65;margin-bottom:9px}
-.task-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.task-who{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--m2)}
-.task-proj{font-family:'DM Mono',monospace;font-size:10px;padding:2px 8px;
-  border-radius:10px;border:1px solid var(--b2)}
-.task-dt{font-family:'DM Mono',monospace;font-size:10px;color:var(--m1)}
+/* Activity feed */
+.feed { display:flex; flex-direction:column; gap:6px; }
+.feed-item {
+  display:flex; gap:9px; align-items:flex-start; padding:9px 11px;
+  background: var(--card2); border:1px solid var(--line); border-radius:8px;
+  transition: border-color .15s;
+}
+.feed-item:hover { border-color:var(--line2); }
+.feed-body { flex:1; min-width:0; }
+.feed-user { font-weight:600; font-size:11px; color:var(--blue); margin-bottom:2px; }
+.feed-txt { font-size:11.5px; color:var(--body); line-height:1.55; word-break:break-word; }
+.feed-time { font-family:'JetBrains Mono'; font-size:9px; color:var(--muted); margin-top:3px; }
+.no-feed { font-size:11px; color:var(--muted); font-style:italic; text-align:center; padding:6px; }
 
-/* ── BLOCKER CARDS ── */
-.blk-list{display:flex;flex-direction:column;gap:9px}
-.blk-card{background:var(--s1);border:1px solid rgba(248,113,113,.12);
-  border-radius:11px;padding:15px 18px;position:relative;overflow:hidden;transition:all .15s}
-.blk-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);opacity:.7}
-.blk-card:hover{border-color:rgba(248,113,113,.25)}
-.blk-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
-.blk-who{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
-.blk-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--red)}
-.blk-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.blk-proj{font-family:'DM Mono',monospace;font-size:10px;padding:2px 9px;
-  border-radius:10px;border:1px solid var(--b2);background:var(--s2)}
-.blk-dt{font-family:'DM Mono',monospace;font-size:9px;color:var(--m1)}
-.blk-txt{font-size:12.5px;color:var(--m2);line-height:1.7}
+/* Avatars */
+.av { border-radius:50%; object-fit:cover; flex-shrink:0; }
+.avp {
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono'; font-weight:500; color:#fff; flex-shrink:0; font-size:9px;
+}
 
-/* ── TEAM ── */
-.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:11px}
-.dev-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:15px;transition:all .2s}
-.dev-card:hover{border-color:var(--b2);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.2)}
-.dev-top{display:flex;align-items:center;gap:10px;margin-bottom:11px}
-.dev-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;line-height:1.2}
-.dev-projs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.dev-pt{font-family:'DM Mono',monospace;font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid var(--b1)}
-.dev-pills{display:flex;gap:5px;flex-wrap:wrap}
-.pill{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border-radius:20px;
-  border:1px solid var(--b1);display:flex;align-items:center;gap:4px}
+/* ══════════════════════════════════════════════════════════
+   STANDUP
+══════════════════════════════════════════════════════════ */
+.su-list { display:flex; flex-direction:column; gap:10px; }
+.su-card {
+  background:var(--card); border:1px solid var(--line); border-radius:13px; overflow:hidden;
+  transition:border-color .15s;
+}
+.su-card:hover { border-color:var(--line2); }
+.su-head {
+  display:flex; align-items:center; gap:11px; padding:13px 18px;
+  border-bottom:1px solid var(--line);
+}
+.su-uname { font-family:'Space Grotesk'; font-size:14px; font-weight:700; color:var(--white); }
+.su-dt { font-family:'JetBrains Mono'; font-size:9px; color:var(--muted); margin-left:auto; text-align:right; line-height:1.6; }
+.su-cols { padding:14px 18px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+@media(max-width:900px){ .su-cols{grid-template-columns:1fr;} }
+.su-col { background:var(--card2); border:1px solid var(--line); border-radius:8px; padding:11px 14px; }
+.su-col-lbl { font-family:'JetBrains Mono'; font-size:9px; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:7px; }
+.su-col-txt { font-size:12.5px; color:var(--body); line-height:1.65; }
+.su-raw { padding:13px 18px; font-size:12px; color:var(--body); line-height:1.7; border-top:1px solid var(--line); }
+.su-empty { padding:48px; text-align:center; color:var(--muted); font-size:13px; line-height:2.2; }
+.su-fmt { font-family:'JetBrains Mono'; font-size:12px; color:var(--blue); line-height:2.2; }
 
-/* ── LOADING ── */
-#loading{position:fixed;inset:0;z-index:500;background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-.ld-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.4px}
-.ld-bar{width:220px;height:2px;background:var(--s3);border-radius:2px;overflow:hidden}
-.ld-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));animation:lda 1.4s ease-in-out infinite}
-@keyframes lda{0%{width:0;margin-left:0}50%{width:65%;margin-left:0}100%{width:8%;margin-left:92%}}
-.ld-txt{font-family:'DM Mono',monospace;font-size:11px;color:var(--m1)}
+/* ══════════════════════════════════════════════════════════
+   TASKS
+══════════════════════════════════════════════════════════ */
+.task-list { display:flex; flex-direction:column; gap:8px; }
+.task-card {
+  background:var(--card); border:1px solid var(--line); border-radius:11px;
+  display:flex; gap:14px; padding:13px 16px 13px 15px;
+  position:relative; overflow:hidden; transition:all .15s; align-items:flex-start;
+}
+.task-card:hover { border-color:var(--line2); background:var(--card2); }
+.task-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--tc); }
+.task-card.is-sub { margin-left:28px; opacity:.82; }
+.task-card.is-sub::before { width:2px; opacity:.5; }
+.t-num { font-family:'JetBrains Mono'; font-size:11px; color:var(--dim); min-width:22px; padding-top:1px; flex-shrink:0; }
+.t-body { flex:1; min-width:0; }
+.t-txt { font-size:13.5px; line-height:1.6; margin-bottom:9px; color:var(--text); }
+.t-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.t-who { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--body); }
+.t-proj {
+  font-family:'JetBrains Mono'; font-size:10px; padding:2px 9px;
+  border-radius:10px; border:1px solid;
+}
+.t-dt { font-family:'JetBrains Mono'; font-size:10px; color:var(--muted); }
 
-/* ── TOAST ── */
-#toast{position:fixed;bottom:22px;right:22px;z-index:300;
-  background:var(--s2);border:1px solid var(--b3);border-radius:9px;
-  padding:11px 16px;font-size:12px;display:none;align-items:center;gap:8px;
-  box-shadow:0 8px 32px rgba(0,0,0,.4);animation:tslide .25s ease}
-@keyframes tslide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ══════════════════════════════════════════════════════════
+   BLOCKERS
+══════════════════════════════════════════════════════════ */
+.blk-list { display:flex; flex-direction:column; gap:10px; }
+.blk-card {
+  background:var(--card); border:1px solid rgba(239,68,68,.13);
+  border-radius:12px; padding:16px 20px;
+  position:relative; overflow:hidden; transition:all .15s;
+}
+.blk-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--red); }
+.blk-card:hover { border-color:rgba(239,68,68,.28); }
+.blk-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.blk-who { display:flex; align-items:center; gap:7px; flex:1; }
+.blk-name { font-family:'Space Grotesk'; font-size:14px; font-weight:700; color:var(--red); }
+.blk-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.blk-proj { font-family:'JetBrains Mono'; font-size:10px; padding:2px 9px; border-radius:10px; border:1px solid var(--line); background:var(--card2); }
+.blk-dt { font-family:'JetBrains Mono'; font-size:9px; color:var(--muted); }
+.blk-txt { font-size:13px; color:var(--body); line-height:1.7; }
 
-/* ── EMPTY ── */
-.empty{padding:44px;text-align:center;color:var(--m1);font-size:13px;line-height:1.8}
+/* ══════════════════════════════════════════════════════════
+   TEAM
+══════════════════════════════════════════════════════════ */
+.team-grid {
+  display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:12px;
+}
+.dev-card {
+  background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:16px; transition:all .2s; position:relative; overflow:hidden;
+}
+.dev-card:hover { border-color:var(--line2); transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.25); }
+.dev-top { display:flex; align-items:center; gap:11px; margin-bottom:12px; }
+.dev-name { font-family:'Space Grotesk'; font-size:14px; font-weight:700; color:var(--white); line-height:1.2; }
+.dev-projs { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.dev-pt { font-family:'JetBrains Mono'; font-size:9px; padding:2px 7px; border-radius:4px; border:1px solid; }
+.dev-pills { display:flex; gap:5px; flex-wrap:wrap; }
+.pill {
+  font-family:'JetBrains Mono'; font-size:9px; padding:3px 9px; border-radius:20px;
+  border:1px solid; display:flex; align-items:center; gap:4px;
+}
 
-.hidden{display:none!important}
-.fade{animation:fd .3s ease both}
-@keyframes fd{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+/* ══════════════════════════════════════════════════════════
+   LOADING
+══════════════════════════════════════════════════════════ */
+#loading {
+  position:fixed; inset:0; z-index:500;
+  background:var(--ink);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+}
+.ld-logo { font-family:'Bebas Neue'; font-size:42px; letter-spacing:6px; color:var(--white); }
+.ld-sub { font-family:'JetBrains Mono'; font-size:10px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-top:-10px; }
+.ld-track { width:220px; height:2px; background:var(--card2); border-radius:2px; overflow:hidden; margin-top:8px; }
+.ld-bar { height:100%; background:linear-gradient(90deg,var(--blue),var(--violet)); animation:ldmove 1.4s ease-in-out infinite; }
+@keyframes ldmove{ 0%{width:0;margin-left:0}50%{width:65%;margin-left:0}100%{width:8%;margin-left:92%} }
+.ld-msg { font-family:'JetBrains Mono'; font-size:10px; color:var(--dim); }
+
+/* ══════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════ */
+#toast {
+  position:fixed; bottom:24px; right:24px; z-index:400;
+  background:var(--card2); border:1px solid var(--line2); border-radius:10px;
+  padding:12px 18px; font-size:12px; display:none; align-items:center; gap:9px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5); font-family:'Space Grotesk';
+  animation:tpop .25s ease;
+}
+@keyframes tpop{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ══════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════ */
+.hidden { display:none!important; }
+.fade { animation: fadeup .3s ease both; }
+@keyframes fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.empty { padding:50px 24px; text-align:center; color:var(--muted); font-size:13px; line-height:2; }
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line2); border-radius:2px; }
 </style>
 </head>
 <body>
-<div class="orb o1"></div><div class="orb o2"></div>
 
+<!-- LOADING -->
 <div id="loading">
-  <div class="ld-title">The Mok Company</div>
-  <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Connecting to Slack…</div>
+  <div class="ld-logo">THE MOK CO.</div>
+  <div class="ld-sub">Command Center</div>
+  <div class="ld-track"><div class="ld-bar"></div></div>
+  <div class="ld-msg">Connecting to Slack…</div>
 </div>
+
 <div id="toast"></div>
 
+<!-- HEADER -->
 <header>
   <div class="logo">
-    <div class="logo-icon">M</div>
-    The Mok Company
-    <span class="logo-sub">/ STANDUP</span>
+    <div class="logo-badge">M</div>
+    <div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span class="logo-name">THE MOK CO.</span>
+        <span class="logo-slash">/</span>
+        <span class="logo-sub">COMMAND CENTER</span>
+      </div>
+    </div>
   </div>
   <div class="hdr-right">
-    <span class="upd" id="upd">—</span>
+    <div class="hdr-time">
+      <span id="hd-time" style="font-size:12px;color:var(--text);font-weight:500">—</span>
+      <span class="t-date" id="hd-date">—</span>
+    </div>
+    <span class="upd-txt" id="upd">—</span>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
     <button class="refbtn" id="refBtn" onclick="doRefresh()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -239,15 +433,17 @@ main{position:relative;z-index:1;padding:22px 28px;max-width:1640px;margin:0 aut
 </header>
 
 <main>
-  <div class="stats">
-    <div class="stat" style="--cc:var(--blue)"><div class="stat-lbl">Today</div><div class="stat-val" id="s-d">—</div><div class="stat-sub" id="s-t">—</div></div>
-    <div class="stat" style="--cc:var(--blue)"><div class="stat-lbl">Projects</div><div class="stat-val" id="s-p">4</div><div class="stat-sub">active</div></div>
-    <div class="stat" style="--cc:var(--green)"><div class="stat-lbl">Tasks</div><div class="stat-val" id="s-tk">—</div><div class="stat-sub">from channels</div></div>
-    <div class="stat" style="--cc:var(--red)"><div class="stat-lbl">Blockers</div><div class="stat-val" id="s-b">—</div><div class="stat-sub">detected</div></div>
-    <div class="stat" style="--cc:var(--purple)"><div class="stat-lbl">Standups</div><div class="stat-val" id="s-su">—</div><div class="stat-sub">in #standup</div></div>
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat" style="--sc:var(--blue)"><div class="stat-accent"></div><div class="stat-lbl">Today</div><div class="stat-val" id="s-d">—</div><div class="stat-sub" id="s-t">Saturday</div></div>
+    <div class="stat" style="--sc:var(--cyan)"><div class="stat-accent"></div><div class="stat-lbl">Projects</div><div class="stat-val" id="s-p">4</div><div class="stat-sub">active</div></div>
+    <div class="stat" style="--sc:var(--green)"><div class="stat-accent"></div><div class="stat-lbl">Tasks</div><div class="stat-val" id="s-tk">—</div><div class="stat-sub">from channels</div></div>
+    <div class="stat" style="--sc:var(--red)"><div class="stat-accent"></div><div class="stat-lbl">Blockers</div><div class="stat-val" id="s-b">—</div><div class="stat-sub">detected</div></div>
+    <div class="stat" style="--sc:var(--violet)"><div class="stat-accent"></div><div class="stat-lbl">Standups</div><div class="stat-val" id="s-su">—</div><div class="stat-sub">in #standup</div></div>
   </div>
 
-  <div class="tabs">
+  <!-- TABS -->
+  <div class="tab-bar">
     <button class="tab on" onclick="tab('o',this)">🏠 Overview</button>
     <button class="tab" onclick="tab('s',this)">📋 Standup</button>
     <button class="tab" onclick="tab('t',this)">✅ Tasks</button>
@@ -255,73 +451,80 @@ main{position:relative;z-index:1;padding:22px 28px;max-width:1640px;margin:0 aut
     <button class="tab" onclick="tab('m',this)">👥 Team</button>
   </div>
 
-  <div id="vo"><div class="sh">Active Projects</div><div class="pgrid" id="pgrid"></div></div>
-  <div id="vs" class="hidden"><div class="sh">#standup — latest updates</div><div class="su-list" id="sulist"></div></div>
-  <div id="vt" class="hidden"><div class="sh">Tasks from all project channels</div><div class="task-list" id="tlist"></div></div>
-  <div id="vb" class="hidden"><div class="sh">Blockers detected across all channels</div><div class="blk-list" id="blist"></div></div>
-  <div id="vm" class="hidden"><div class="sh">Team members & assignments</div><div class="team-grid" id="tgrid"></div></div>
+  <div id="vo"><div class="sec-lbl">Active Projects</div><div class="overview-grid" id="ogrid"></div></div>
+  <div id="vs" class="hidden"><div class="sec-lbl">#standup — latest updates</div><div class="su-list" id="sulist"></div></div>
+  <div id="vt" class="hidden"><div class="sec-lbl">Tasks from all project channels</div><div class="task-list" id="tlist"></div></div>
+  <div id="vb" class="hidden"><div class="sec-lbl">Blockers detected across all channels</div><div class="blk-list" id="blist"></div></div>
+  <div id="vm" class="hidden"><div class="sec-lbl">Team members & project assignments</div><div class="team-grid" id="tgrid"></div></div>
 </main>
 
 <script>
-const PC={'CairoLive':'#e85d4a','Al Nasser':'#34d399','Print Out':'#a78bfa','Turbo':'#fbbf24'};
-const COLS=['#4f9cf9','#34d399','#fbbf24','#e85d4a','#a78bfa','#06b6d4','#ec4899','#84cc16'];
+const PC = { 'CairoLive':'#f97316','Al Nasser':'#10b981','Print Out':'#8b5cf6','Turbo':'#eab308' };
+const COLS = ['#3b82f6','#22c55e','#f59e0b','#f97316','#8b5cf6','#06b6d4','#ec4899','#84cc16','#14b8a6'];
 function gc(s){let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return COLS[Math.abs(h)%COLS.length];}
 function ini(n){if(!n)return'?';const p=n.trim().split(' ');return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():n.slice(0,2).toUpperCase();}
 function xe(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function avEl(obj, sz) {
-  const s = sz||22, name=(obj&&obj.name)?obj.name:(typeof obj==='string'?obj:'?'), col=gc(name);
-  if (obj && obj.avatar)
+  const s=sz||22, name=(obj&&obj.name)?obj.name:(typeof obj==='string'?obj:'?'), col=gc(name);
+  if(obj&&obj.avatar)
     return `<img src="${obj.avatar}" width="${s}" height="${s}" class="av" style="width:${s}px;height:${s}px" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="avp" style="width:${s}px;height:${s}px;background:${col};display:none">${ini(name)}</div>`;
   return `<div class="avp" style="width:${s}px;height:${s}px;background:${col}">${ini(name)}</div>`;
 }
 
 function ago(iso){
   if(!iso)return'';
-  const d=Date.now()-new Date(iso).getTime(), m=Math.floor(d/60000);
+  const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);
   if(m<1)return'just now';if(m<60)return m+'m ago';
-  const h=Math.floor(m/60);if(h<24)return h+'h ago';
-  return Math.floor(h/24)+'d ago';
+  const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';
 }
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────
 function renderOverview(ps) {
-  document.getElementById('pgrid').innerHTML = ps.map((p,i) => {
-    const col = PC[p.name]||'#4f9cf9';
-    const mems = p.members&&p.members.length
-      ? p.members.map(m=>`<div class="chip">${avEl(m,19)}<span>${xe(m.name.split(' ')[0])}</span></div>`).join('')
-      : '<span style="font-size:11px;color:var(--m1)">No members</span>';
-    const acts = p.recentActivity&&p.recentActivity.length
-      ? p.recentActivity.slice(0,3).map(a=>`
-        <div class="act-item">
+  document.getElementById('ogrid').innerHTML = ps.map((p, i) => {
+    const col = PC[p.name]||'#3b82f6';
+    const mems = p.members && p.members.length
+      ? p.members.map(m => `<div class="mchip">${avEl(m,19)}<span>${xe(m.name.split(' ')[0])}</span></div>`).join('')
+      : '<span style="font-size:11px;color:var(--muted)">No members</span>';
+
+    const acts = p.recentActivity && p.recentActivity.length
+      ? p.recentActivity.slice(0,3).map(a => `
+        <div class="feed-item">
           ${avEl({name:a.user,avatar:a.avatar},26)}
-          <div class="act-body">
-            <div class="act-user">${xe(a.user)}</div>
-            <div class="act-txt">${xe(a.text.substring(0,130))}${a.text.length>130?'…':''}</div>
-            <div class="act-dt">${a.date} · ${a.time}</div>
+          <div class="feed-body">
+            <div class="feed-user">${xe(a.user)}</div>
+            <div class="feed-txt">${xe(a.text.substring(0,130))}${a.text.length>130?'…':''}</div>
+            <div class="feed-time">${a.date} · ${a.time}</div>
           </div>
         </div>`).join('')
-      : '<div class="no-act">No recent messages</div>';
-    const errT = p.error?`<span class="tag tag-red">${xe(p.error)}</span>`:'';
-    const blkT = p.blockers&&p.blockers.length?`<span class="tag tag-red">⚠ ${p.blockers.length} blockers</span>`:'';
-    const okT = !p.error&&(!p.blockers||!p.blockers.length)?`<span class="tag tag-green">✓ clear</span>`:'';
-    return `<div class="pc fade" style="animation-delay:${i*.06}s">
-      <div class="pc-bar" style="background:${col}"></div>
-      <div class="pc-top">
-        <div class="pc-name">
-          <div class="pc-dot" style="background:${col};box-shadow:0 0 8px ${col}66"></div>${xe(p.name)}
+      : '<div class="no-feed">No recent activity</div>';
+
+    const bTag = p.blockers&&p.blockers.length ? `<span class="mtag mtag-blk">⚠ ${p.blockers.length}</span>` : '';
+    const okTag = !p.error&&(!p.blockers||!p.blockers.length) ? `<span class="mtag mtag-ok">✓ clear</span>` : '';
+    const errTag = p.error ? `<span class="mtag mtag-err">${xe(p.error)}</span>` : '';
+
+    return `<div class="proj-block fade" style="animation-delay:${i*.07}s">
+      <div class="proj-strip" style="--pc:${col}"></div>
+      <div class="proj-hdr">
+        <div class="proj-title">
+          <div class="proj-orb" style="--pc:${col}"></div>
+          <span class="proj-name">${xe(p.name)}</span>
+          <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-left:2px">${p.members?p.members.length:0} members</span>
         </div>
-        <div class="pc-tags">${errT}${blkT}${okT}<span class="tag tag-blue">${p.messageCount} msgs</span></div>
+        <div class="proj-meta">
+          ${errTag}${bTag}${okTag}
+          <span class="mtag mtag-msg">${p.messageCount} msgs</span>
+        </div>
       </div>
-      <div class="pc-members">${mems}</div>
-      <div class="pc-body">
-        <div class="mini-row">
-          <div class="mini"><div class="mini-v" style="color:var(--green)">${p.tasks?p.tasks.length:0}</div><div class="mini-l">Tasks</div></div>
-          <div class="mini"><div class="mini-v" style="color:var(--red)">${p.blockers?p.blockers.length:0}</div><div class="mini-l">Blockers</div></div>
-          <div class="mini"><div class="mini-v" style="color:var(--blue)">${p.members?p.members.length:0}</div><div class="mini-l">Members</div></div>
+      <div class="proj-members">${mems}</div>
+      <div class="proj-body">
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-val" style="color:var(--green)">${p.tasks?p.tasks.length:0}</div><div class="kpi-lbl">Tasks</div></div>
+          <div class="kpi"><div class="kpi-val" style="color:var(--red)">${p.blockers?p.blockers.length:0}</div><div class="kpi-lbl">Blockers</div></div>
+          <div class="kpi"><div class="kpi-val" style="color:${col}">${p.members?p.members.length:0}</div><div class="kpi-lbl">Members</div></div>
         </div>
-        <div class="sh" style="margin-bottom:8px">Recent Activity</div>
-        <div class="act-list">${acts}</div>
+        <div class="sec-lbl" style="margin-bottom:8px">Recent Activity</div>
+        <div class="feed">${acts}</div>
       </div>
     </div>`;
   }).join('');
@@ -330,34 +533,34 @@ function renderOverview(ps) {
 // ── STANDUP ───────────────────────────────────────────────────────────────
 function renderStandup(su) {
   const w = document.getElementById('sulist');
-  if (!su||!su.length) {
+  if(!su||!su.length){
     w.innerHTML = `<div class="su-empty">📋 No standup updates yet in <strong>#standup</strong><br><br>
-    Ask your team to post every morning using:<br><br>
+    Ask your team to post daily using:<br><br>
     <div class="su-fmt">✅ Yesterday: [what you finished]<br>🎯 Today: [what you're working on]<br>🚨 Blockers: [any issues or "none"]</div></div>`;
     return;
   }
   w.innerHTML = su.map(s => {
     const hf = s.yesterday||s.today||s.blockers;
-    const blkBad = s.blockers && !['none','no','n/a','—'].includes(s.blockers.toLowerCase().trim());
+    const blkBad = s.blockers && !['none','no','n/a','—','-'].includes(s.blockers.toLowerCase().trim());
     const bc = blkBad ? 'var(--red)' : 'var(--green)';
     return `<div class="su-card fade">
       <div class="su-head">
-        ${avEl({name:s.name,avatar:s.avatar},32)}
-        <span class="su-name">${xe(s.name)}</span>
-        <div class="su-time">${xe(s.date||'')}<br>${xe(s.time||'')}</div>
+        ${avEl({name:s.name,avatar:s.avatar},34)}
+        <span class="su-uname">${xe(s.name)}</span>
+        <div class="su-dt">${xe(s.date||'')}<br>${xe(s.time||'')}</div>
       </div>
-      ${hf ? `<div class="su-body">
-        <div class="su-sec">
-          <div class="su-sec-lbl" style="color:var(--green)">✅ Yesterday</div>
-          <div class="su-sec-txt">${xe(s.yesterday||'—')}</div>
+      ${hf ? `<div class="su-cols">
+        <div class="su-col">
+          <div class="su-col-lbl" style="color:var(--green)">✅ Yesterday</div>
+          <div class="su-col-txt">${xe(s.yesterday||'—')}</div>
         </div>
-        <div class="su-sec">
-          <div class="su-sec-lbl" style="color:var(--blue)">🎯 Today</div>
-          <div class="su-sec-txt">${xe(s.today||'—')}</div>
+        <div class="su-col">
+          <div class="su-col-lbl" style="color:var(--blue)">🎯 Today</div>
+          <div class="su-col-txt">${xe(s.today||'—')}</div>
         </div>
-        <div class="su-sec" style="border-color:${blkBad?'rgba(248,113,113,.22)':'var(--b1)'}">
-          <div class="su-sec-lbl" style="color:${bc}">🚨 Blockers</div>
-          <div class="su-sec-txt" style="color:${blkBad?'var(--red)':'var(--m2)'}">${xe(s.blockers||'—')}</div>
+        <div class="su-col" style="border-color:${blkBad?'rgba(239,68,68,.22)':'var(--line)'}">
+          <div class="su-col-lbl" style="color:${bc}">🚨 Blockers</div>
+          <div class="su-col-txt" style="color:${blkBad?'var(--red)':'var(--body)'}">${xe(s.blockers||'—')}</div>
         </div>
       </div>` : `<div class="su-raw">${xe((s.raw||'').substring(0,400))}${(s.raw||'').length>400?'…':''}</div>`}
     </div>`;
@@ -369,28 +572,25 @@ function renderTasks(ps) {
   const w = document.getElementById('tlist');
   const all = [];
   ps.forEach(p => { if(p.tasks) p.tasks.forEach(t => all.push({...t, proj:p.name})); });
-  if (!all.length) {
+  if(!all.length){
     w.innerHTML = `<div class="empty">No tasks found yet.<br><br>
-      <strong>Post a numbered list in any project channel:</strong><br><br>
-      <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--blue)">
-      1. Fix the delivery man API<br>2. Update homepage slider<br>3. Allow DXF file uploads</span><br><br>
-      Each item becomes a task card here ✅</div>`;
+    <strong>Post a numbered list in any project channel:</strong><br><br>
+    <span style="font-family:'JetBrains Mono';font-size:12px;color:var(--blue)">1. Fix the delivery man API<br>2. Update homepage slider<br>3. Allow DXF file uploads</span><br><br>
+    Each item becomes a task card here ✅</div>`;
     return;
   }
-  w.innerHTML = all.map((t,i) => {
-    const col = PC[t.proj]||'#4f9cf9';
-    const isSubItem = t.text.startsWith('  →');
-    return `<div class="task-card fade" style="--tc:${col};animation-delay:${i*.015}s${isSubItem?';margin-left:28px;opacity:.85':''}">
-      <span class="task-n">${isSubItem?'':i+1}</span>
-      <div class="task-body">
-        <div class="task-txt">${xe(t.text.replace(/^\s*→\s*/,''))}</div>
-        <div class="task-meta">
-          <div class="task-who">
-            ${avEl({name:t.from,avatar:t.avatar},18)}
-            <span>${xe(t.from||'Unknown')}</span>
-          </div>
-          <span class="task-proj" style="color:${col};border-color:${col}40">${xe(t.proj)}</span>
-          <span class="task-dt">${xe(t.date||'')} · ${xe(t.time||'')}</span>
+  let n = 0;
+  w.innerHTML = all.map(t => {
+    if(!t.sub) n++;
+    const col = PC[t.proj]||'#3b82f6';
+    return `<div class="task-card fade${t.sub?' is-sub':''}" style="--tc:${col}">
+      <span class="t-num">${t.sub?'→':n}</span>
+      <div class="t-body">
+        <div class="t-txt">${xe(t.text)}</div>
+        <div class="t-meta">
+          <div class="t-who">${avEl({name:t.from,avatar:t.avatar},18)}<span>${xe(t.from||'Unknown')}</span></div>
+          <span class="t-proj" style="color:${col};border-color:${col}44">${xe(t.proj)}</span>
+          <span class="t-dt">${xe(t.date||'')} · ${xe(t.time||'')}</span>
         </div>
       </div>
     </div>`;
@@ -402,18 +602,15 @@ function renderBlockers(ps) {
   const w = document.getElementById('blist');
   const all = [];
   ps.forEach(p => { if(p.blockers) p.blockers.forEach(b => all.push({...b, proj:p.name})); });
-  if (!all.length) {
-    w.innerHTML = '<div class="empty" style="color:var(--green)">🟢 No blockers detected — all projects are clear!</div>';
+  if(!all.length){
+    w.innerHTML = '<div class="empty" style="color:var(--green)">🟢 No blockers detected — all clear!</div>';
     return;
   }
   w.innerHTML = all.map(b => {
-    const col = PC[b.proj]||'#4f9cf9';
+    const col = PC[b.proj]||'#3b82f6';
     return `<div class="blk-card fade">
       <div class="blk-head">
-        <div class="blk-who">
-          ${avEl({name:b.user,avatar:b.avatar},30)}
-          <span class="blk-name">${xe(b.user||'Unknown')}</span>
-        </div>
+        <div class="blk-who">${avEl({name:b.user,avatar:b.avatar},30)}<span class="blk-name">${xe(b.user||'Unknown')}</span></div>
         <div class="blk-right">
           <span class="blk-proj" style="color:${col}">${xe(b.proj)}</span>
           <span class="blk-dt">${xe(b.date||'')} · ${xe(b.time||'')}</span>
@@ -428,41 +625,39 @@ function renderBlockers(ps) {
 function renderTeam(tm) {
   const w = document.getElementById('tgrid');
   const mems = Object.values(tm);
-  if (!mems.length) { w.innerHTML = '<div class="empty">No team data.</div>'; return; }
+  if(!mems.length){ w.innerHTML='<div class="empty">No team data.</div>'; return; }
   w.innerHTML = mems.map(m => {
-    const pts = m.projects.map(p=>`<span class="dev-pt" style="color:${PC[p]||'#4f9cf9'};border-color:${PC[p]||'#4f9cf9'}40">${xe(p)}</span>`).join('');
+    const pts = m.projects.map(p => `<span class="dev-pt" style="color:${PC[p]||'#3b82f6'};border-color:${PC[p]||'#3b82f6'}44">${xe(p)}</span>`).join('');
     const blkPill = m.blockerCount > 0
-      ? `<span class="pill" style="background:rgba(248,113,113,.07);color:var(--red);border-color:rgba(248,113,113,.2)">⚠ ${m.blockerCount} blocker${m.blockerCount>1?'s':''}</span>`
-      : `<span class="pill" style="background:rgba(52,211,153,.07);color:var(--green);border-color:rgba(52,211,153,.18)">✓ clear</span>`;
-    const projPill = `<span class="pill" style="background:rgba(79,156,249,.07);color:var(--blue);border-color:rgba(79,156,249,.18)">${m.projects.length} project${m.projects.length>1?'s':''}</span>`;
+      ? `<span class="pill" style="background:rgba(239,68,68,.07);color:var(--red);border-color:rgba(239,68,68,.2)">⚠ ${m.blockerCount} blocker${m.blockerCount>1?'s':''}</span>`
+      : `<span class="pill" style="background:rgba(34,197,94,.07);color:var(--green);border-color:rgba(34,197,94,.2)">✓ clear</span>`;
+    const projPill = `<span class="pill" style="background:rgba(59,130,246,.07);color:var(--blue);border-color:rgba(59,130,246,.2)">${m.projects.length || 0} project${m.projects.length!==1?'s':''}</span>`;
     return `<div class="dev-card fade">
-      <div class="dev-top">
-        ${avEl(m, 38)}
-        <div>
-          <div class="dev-name">${xe(m.name)}</div>
-          <div class="dev-projs">${pts}</div>
-        </div>
-      </div>
+      <div class="dev-top">${avEl(m,38)}<div><div class="dev-name">${xe(m.name)}</div><div class="dev-projs">${pts||'<span style="font-size:10px;color:var(--muted)">No project assigned</span>'}</div></div></div>
       <div class="dev-pills">${projPill}${blkPill}</div>
     </div>`;
   }).join('');
 }
 
-// ── UPDATE HEADER ──────────────────────────────────────────────────────────
-function updHeader(d) {
-  const ps = d.projects||[];
-  document.getElementById('s-p').textContent = ps.length;
-  document.getElementById('s-tk').textContent = ps.reduce((s,p)=>s+(p.tasks?p.tasks.length:0),0);
-  document.getElementById('s-b').textContent  = ps.reduce((s,p)=>s+(p.blockers?p.blockers.length:0),0);
-  document.getElementById('s-su').textContent = (d.standup||[]).length;
-  if (d.lastUpdated) document.getElementById('upd').textContent = 'Updated '+ago(d.lastUpdated);
-  const n = new Date();
-  document.getElementById('s-d').textContent = n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  document.getElementById('s-t').textContent = n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+// ── HEADER ────────────────────────────────────────────────────────────────
+function updHdr(d) {
+  const ps=d.projects||[];
+  document.getElementById('s-p').textContent=ps.length;
+  document.getElementById('s-tk').textContent=ps.reduce((s,p)=>s+(p.tasks?p.tasks.length:0),0);
+  document.getElementById('s-b').textContent=ps.reduce((s,p)=>s+(p.blockers?p.blockers.length:0),0);
+  document.getElementById('s-su').textContent=(d.standup||[]).length;
+  if(d.lastUpdated) document.getElementById('upd').textContent='Updated '+ago(d.lastUpdated);
+  const n=new Date();
+  const dd=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const tt=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('s-d').textContent=dd.split(',')[1]?.trim()||dd;
+  document.getElementById('s-t').textContent=n.toLocaleDateString('en-US',{weekday:'long'});
+  document.getElementById('hd-time').textContent=tt;
+  document.getElementById('hd-date').textContent=dd;
 }
 
 function render(d) {
-  updHeader(d);
+  updHdr(d);
   renderOverview(d.projects||[]);
   renderStandup(d.standup||[]);
   renderTasks(d.projects||[]);
@@ -470,57 +665,51 @@ function render(d) {
   renderTeam(d.team||{});
 }
 
-function tab(n, el) {
-  ['o','s','t','b','m'].forEach(x => document.getElementById('v'+x).classList.add('hidden'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+function tab(n,el){
+  ['o','s','t','b','m'].forEach(x=>document.getElementById('v'+x).classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('v'+n).classList.remove('hidden');
   el.classList.add('on');
 }
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.innerHTML = msg; t.style.display = 'flex';
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=msg; t.style.display='flex';
   clearTimeout(window._tt);
-  window._tt = setTimeout(() => t.style.display='none', 3000);
+  window._tt=setTimeout(()=>t.style.display='none',3000);
 }
 
-let prevTs = null;
-
-async function load(silent) {
-  try {
-    const r = await fetch('/api/data'), d = await r.json();
-    if (!silent) { render(d); document.getElementById('loading').style.display='none'; }
-    else if (d.lastUpdated !== prevTs) { render(d); if (prevTs) toast('🔄 Dashboard updated'); }
-    prevTs = d.lastUpdated;
-  } catch(e) {
-    if (!silent) {
-      document.getElementById('loading').innerHTML = '<div style="color:var(--red);font-family:\'DM Mono\',monospace;font-size:12px">Connection error. Retrying…</div>';
-      setTimeout(() => load(false), 3000);
+let prevTs=null;
+async function load(silent){
+  try{
+    const r=await fetch('/api/data'), d=await r.json();
+    if(!silent){ render(d); document.getElementById('loading').style.display='none'; }
+    else if(d.lastUpdated!==prevTs){ render(d); if(prevTs) toast('🔄 Dashboard updated from Slack'); }
+    prevTs=d.lastUpdated;
+  }catch(e){
+    if(!silent){
+      document.getElementById('loading').innerHTML='<div style="color:var(--red);font-family:JetBrains Mono,monospace;font-size:12px">Connection error. Retrying…</div>';
+      setTimeout(()=>load(false),3000);
     }
   }
 }
 
-async function doRefresh() {
-  const b = document.getElementById('refBtn');
+async function doRefresh(){
+  const b=document.getElementById('refBtn');
   b.classList.add('loading'); b.disabled=true;
-  try {
-    await fetch('/api/refresh', {method:'POST'});
-    await load(false);
-    toast('✅ Refreshed successfully');
-  } finally {
-    b.classList.remove('loading'); b.disabled=false;
-    b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Refresh';
-  }
+  try{ await fetch('/api/refresh',{method:'POST'}); await load(false); toast('✅ Refreshed from Slack'); }
+  finally{ b.classList.remove('loading'); b.disabled=false; b.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Refresh'; }
 }
 
-// Load on start, then poll every 30s
 load(false);
-setInterval(() => load(true), 30000);
-setInterval(() => {
-  const n = new Date();
-  document.getElementById('s-d').textContent = n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  document.getElementById('s-t').textContent = n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-}, 60000);
+setInterval(()=>load(true), 30000);
+setInterval(()=>{
+  const n=new Date();
+  const dd=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const tt=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hd-time').textContent=tt;
+  document.getElementById('hd-date').textContent=dd;
+}, 30000);
 </script>
 </body>
 </html>
