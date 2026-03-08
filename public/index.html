@@ -156,6 +156,19 @@ main{position:relative;z-index:1;padding:24px 28px;max-width:1680px;margin:0 aut
 .t-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);}
 .slack-link{font-family:'JetBrains Mono';font-size:9px;color:var(--blue);text-decoration:none;padding:2px 7px;border:1px solid rgba(59,130,246,.2);border-radius:4px;transition:all .15s;}
 .slack-link:hover{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.4);}
+/* TASK UPDATES */
+.t-updates{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.t-upd{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;background:var(--card3);border:1px solid var(--line);border-radius:6px;border-left:2px solid var(--amber);}
+.t-upd.done{border-left-color:var(--green);}
+.t-upd.progress{border-left-color:var(--blue);}
+.t-upd-badge{font-family:'JetBrains Mono';font-size:9px;padding:1px 7px;border-radius:3px;font-weight:600;flex-shrink:0;margin-top:1px;}
+.t-upd-badge.done{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.t-upd-badge.progress{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+.t-upd-badge.update{background:rgba(234,179,8,.1);color:var(--amber);border:1px solid rgba(234,179,8,.2);}
+.t-upd-badge.fixed{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.t-upd-body{flex:1;min-width:0;}
+.t-upd-detail{font-size:11.5px;color:var(--body);line-height:1.5;}
+.t-upd-meta{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-top:3px;}
 
 /* BLOCKERS */
 .blk-list{display:flex;flex-direction:column;gap:10px;}
@@ -495,7 +508,13 @@ function renderTasksView(){
       const parentHint=t.sub&&t.parentTask?`<div class="t-parent">↳ ${xe(t.parentTask.substring(0,80))}${t.parentTask.length>80?'…':''}</div>`:'';
       const slackUrl=t.msgTs?`https://themokcompany.slack.com/archives/${g.proj.id}/p${t.msgTs.replace('.','')}`:'';
       const slinkHtml=slackUrl?`<a href="${slackUrl}" target="_blank" class="slack-link">💬 View in Slack</a>`:'';
-      return `<div class="task-card${t.sub?' is-sub':''} fade" style="--tc:${col}">
+      // Render linked updates
+      const updHtml=(t.updates&&t.updates.length&&!t.sub)?t.updates.map(u=>{
+        const btype=['done','fixed','completed','finish','finished','deployed','merged','resolved'].includes(u.type)?'done':u.type==='progress'?'progress':'update';
+        const label=u.type==='done'||u.type==='finished'||u.type==='completed'||u.type==='deployed'||u.type==='merged'?'✅ DONE':u.type==='progress'?'⏳ IN PROGRESS':u.type==='fixed'||u.type==='resolved'?'✅ FIXED':'🔄 UPDATE';
+        return `<div class="t-upd ${btype}">${avEl({name:u.from,avatar:u.avatar},18)}<div class="t-upd-body"><span class="t-upd-badge ${btype}">${label}</span><div class="t-upd-detail">${xe(u.detail.substring(0,200))}</div><div class="t-upd-meta">${xe(u.from)} · ${xe(u.date)} ${xe(u.time)}</div></div></div>`;
+      }).join(''):'';
+      return `<div class="task-card${t.sub?' is-sub':''} fade" style="--tc:${t.updates&&t.updates.length&&!t.sub?'var(--green)':col}">
         <span class="t-num">${t.sub?'↳':n}</span>
         <div class="t-body">
           ${parentHint}
@@ -506,6 +525,7 @@ function renderTasksView(){
             <span class="t-dt">${xe(t.date||'')} · ${xe(t.time||'')}</span>
             ${slinkHtml}
           </div>
+          ${updHtml?`<div class="t-updates">${updHtml}</div>`:''}
         </div>
       </div>`;
     }).join('');
