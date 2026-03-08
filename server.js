@@ -47,10 +47,9 @@ const PROJ_MEMBERS = {
 
 const ALL_MEMBERS = Object.keys(USERS);
 
-// Tags for categorizing tasks and blockers
-const FRONTEND_TAGS = ["website","frontend","front end","front-end","ui","ux","web","homepage","dashboard","page","screen","display","button","form","filter","dropdown","design","layout","responsive","mobile app","app","ios","android","flutter","react","css","html","animation","slider","banner","image","icon","view","scroll","modal","popup","card","chart","widget","navigation","menu","header","footer"];
-const BACKEND_TAGS  = ["backend","back end","back-end","api","endpoint","database","db","server","query","migration","model","controller","service","auth","token","route","payload","request","response","status","http","500","400","403","json","sql","seaf","seeder","schema","deploy","nginx","redis","cache","queue","cron","job","log","error","bug","fix","update","delete","insert","select","join","php","laravel","node","express","mongo","mysql","postgres"];
-const MOBILE_TAGS   = ["mobile","app","ios","android","flutter","react native","apk","play store","app store","push notification","deep link","version","build","release","testflight","firebase","screen","navigation","state","widget","bloc","provider","package","dependency"];
+const FRONTEND_TAGS = ["website","frontend","front end","front-end","ui","ux","web","homepage","dashboard","page","screen","display","button","form","filter","dropdown","design","layout","slider","banner","image","icon","view","scroll","modal","card","navigation","menu","header","footer","css","html","react","animation"];
+const BACKEND_TAGS  = ["backend","back end","back-end","api","endpoint","database","db","server","query","migration","model","controller","service","auth","token","route","payload","request","response","500","400","403","json","sql","seeder","schema","deploy","nginx","redis","cache","php","laravel","node","express","mongo","mysql","postgres"];
+const MOBILE_TAGS   = ["mobile","ios","android","flutter","react native","apk","play store","app store","push notification","deep link","testflight","firebase","bloc","provider"];
 
 function detectTags(text) {
   const low = text.toLowerCase();
@@ -63,7 +62,18 @@ function detectTags(text) {
 
 function isBlocker(text) {
   const low = text.toLowerCase();
-  return ["block","stuck","bug","error","not work","issue","fail","broken","problem","crash","cannot","can't","500","400","failing","مشكلة","doesn't work","not showing","not loading","not appearing"].some(w => low.includes(w));
+  return ["block","stuck","bug","error","not work","issue","fail","broken","problem","crash","cannot","can't","500","400","failing","doesn't work","not showing","not loading","not appearing","مشكلة"].some(w => low.includes(w));
+}
+
+// Detect "update task 2: ...", "done task 1: ...", "progress task 3: ...", "fixed task 2: ..."
+function detectTaskUpdate(text) {
+  const low = text.toLowerCase().trim();
+  const prefixes = "(update|done|progress|fixed|completed|finish|finished|deployed|merged|tested|resolv)";
+  const m = low.match(new RegExp(`^${prefixes}[d]?\\s+task\\s+(\\d+)\\s*[:\\-]?\\s*(.*)`, "s"));
+  if (m) return { type: m[1], taskNum: parseInt(m[2]), detail: m[3].trim()||text };
+  const m2 = low.match(new RegExp(`^task\\s+(\\d+)\\s+${prefixes}[d]?\\s*[:\\-]?\\s*(.*)`, "s"));
+  if (m2) return { type: m2[2], taskNum: parseInt(m2[1]), detail: m2[3].trim()||text };
+  return null;
 }
 
 let cache = { lastUpdated: null, projects: [], standup: [], team: {} };
@@ -100,46 +110,34 @@ function clean(raw){
 
 function fmt(ts){
   const d=new Date(parseFloat(ts)*1000);
-  return{
-    date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),
-    time:d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),
-    iso:d.toISOString(),
-    ts: ts
-  };
+  return{date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),time:d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),iso:d.toISOString(),ts};
 }
 
-// ── TASK EXTRACTION: handles nested sub-items (a. b. c.) linking to parent ──
 function extractTasks(text) {
   const lines = text.split("\n");
   const tasks = [];
   let lastParentIdx = -1;
+  let foundList = false;
 
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
 
-    // Numbered: "1." "2." etc
     const num = line.match(/^(\d+)[\.\)]\s+(.+)/);
     if (num && num[2].trim().length > 4) {
       tasks.push({ text: num[2].trim(), num: parseInt(num[1]), sub: false, parentIdx: -1 });
       lastParentIdx = tasks.length - 1;
+      foundList = true;
       continue;
     }
-    // Sub-item: "a." "b." etc (link to last parent)
-    const letter = line.match(/^([a-zA-Z])[\.\)]\s+(.+)/);
-    if (letter && letter[2].trim().length > 3 && lastParentIdx >= 0) {
-      tasks.push({ text: letter[2].trim(), num: null, sub: true, parentIdx: lastParentIdx });
-      continue;
-    }
-    // Bullet - or • (only if we already started a list)
-    if (tasks.length > 0) {
-      const bullet = line.match(/^[-•*]\s+(.+)/);
-      if (bullet && bullet[1].trim().length > 5) {
-        tasks.push({ text: bullet[1].trim(), num: null, sub: true, parentIdx: lastParentIdx });
+    if (foundList) {
+      const letter = line.match(/^[a-zA-Z][\.\)]\s+(.+)/);
+      if (letter && letter[1].trim().length > 3) {
+        tasks.push({ text: letter[1].trim(), num: null, sub: true, parentIdx: lastParentIdx });
+        continue;
       }
     }
   }
-
   return tasks.length >= 2 ? tasks : [];
 }
 
@@ -167,51 +165,60 @@ async function fetchAll(){
       const resp=await slackGet("conversations.history?channel="+proj.id+"&limit=200");
       if(!resp.ok){results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:resp.error});continue;}
       const msgs=resp.messages||[];
-      const allTasks=[], allBlockers=[];
+      const allTasks=[], allBlockers=[], rawUpdates=[];
 
       for(const m of msgs){
         if(!m.text||m.bot_id||m.subtype) continue;
         const text=clean(m.text);
-        if(!text||text.length<8) continue;
+        if(!text||text.length<4) continue;
         const dt=fmt(m.ts);
         const name=uname(m.user), avatar=uav(m.user);
 
-        // Extract tasks with sub-item linking
+        // Check for task update message first
+        const upd=detectTaskUpdate(text);
+        if(upd){
+          rawUpdates.push({...upd, from:name, avatar, date:dt.date, time:dt.time, iso:dt.iso, msgTs:m.ts});
+          continue;
+        }
+
+        // Extract task list
         const items=extractTasks(text);
         if(items.length){
-          // Build parent text map for linking
-          const parentTexts={};
-          items.forEach((it,i)=>{ if(!it.sub) parentTexts[i]=it.text; });
-
-          items.forEach((item,i)=>{
-            const parentText = item.sub && item.parentIdx>=0 ? items[item.parentIdx]?.text : null;
-            const allTags = detectTags(item.text + (parentText||''));
+          items.forEach(item=>{
+            const parentText = item.sub&&item.parentIdx>=0 ? items[item.parentIdx]?.text : null;
             allTasks.push({
-              text: item.text,
-              num: item.num,
-              sub: item.sub,
-              parentTask: parentText,
-              tags: allTags,
-              date: dt.date, time: dt.time, iso: dt.iso, ts: dt.ts,
-              from: name, avatar, uid: m.user,
-              msgTs: m.ts  // for linking updates
+              text:item.text, num:item.num, sub:item.sub, parentTask:parentText,
+              tags:detectTags(item.text+(parentText||'')),
+              updates:[], // will be filled below
+              date:dt.date, time:dt.time, iso:dt.iso, ts:dt.ts,
+              from:name, avatar, uid:m.user, msgTs:m.ts
             });
           });
         }
 
-        // Blockers detection with tags
-        if(isBlocker(text) && text.length > 20){
+        // Blocker detection (skip very short messages)
+        if(isBlocker(text)&&text.length>20){
           allBlockers.push({
-            text: text.substring(0,500),
-            tags: detectTags(text),
-            date: dt.date, time: dt.time, iso: dt.iso, ts: dt.ts,
-            user: name, avatar, uid: m.user,
-            msgTs: m.ts
+            text:text.substring(0,500),
+            tags:detectTags(text),
+            date:dt.date, time:dt.time, iso:dt.iso, ts:dt.ts,
+            user:name, avatar, uid:m.user, msgTs:m.ts, projId:proj.id
           });
         }
       }
 
-      // Recent activity — last 10 messages regardless of time (not just 48h)
+      // Link updates to tasks by task number
+      // Tasks and updates are collected newest-first; we match by task number within the same project
+      for(const upd of rawUpdates){
+        // Find the most recent task with this number
+        const matchedTask = allTasks.find(t=>!t.sub && t.num===upd.taskNum);
+        if(matchedTask){
+          matchedTask.updates.push(upd);
+        }
+        // If no match, still show as standalone update on task with that index
+      }
+
+      // Recent activity: last 6 real messages
       const recent=[];
       for(const m of msgs){
         if(recent.length>=6) break;
@@ -223,13 +230,16 @@ async function fetchAll(){
       }
 
       const members=(PROJ_MEMBERS[proj.name]||[]).map(uid=>({id:uid,name:uname(uid),avatar:uav(uid)}));
-      results.push({...proj,members,messageCount:msgs.length,
+      results.push({
+        ...proj, members, messageCount:msgs.length,
         tasks:allTasks.slice(0,80),
         blockers:allBlockers.slice(0,30),
         recentActivity:recent,
-        lastMessage:msgs[0]?fmt(msgs[0].ts).iso:null,error:null});
-      console.log(proj.name,msgs.length,"msgs |",allTasks.length,"tasks |",allBlockers.length,"blockers");
+        lastMessage:msgs[0]?fmt(msgs[0].ts).iso:null, error:null
+      });
+      console.log(proj.name, msgs.length,"msgs |",allTasks.length,"tasks |",allBlockers.length,"blockers |",rawUpdates.length,"updates");
     }catch(err){
+      console.log("ERR",proj.name,err.message);
       results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:err.message});
     }
   }
