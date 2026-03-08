@@ -38,7 +38,6 @@ const USERS = {
   "U0AAXCCJ89J": "Mohamed Atya",
 };
 
-// EXACT members from Slack channel screenshots
 const PROJ_MEMBERS = {
   "CairoLive": ["U0AATPYJBFU","U0AAMD052JF","U0AB6MYHDK3","U0AACAZ7V0X","U0AAQG9F11T","U0AAQBA8WDB"],
   "Al Nasser": ["U0AAMD008BD","U0ABA01GDL1","U0AACAZ7V0X","U0AATPYJBFU","U0AACB0NDHV","U0AAXCCJ89J","U0AB6MYHDK3","U0AAQBA8WDB","U0AAXCAPSR2","U0AAMD052JF","U0AACB004SK"],
@@ -47,6 +46,25 @@ const PROJ_MEMBERS = {
 };
 
 const ALL_MEMBERS = Object.keys(USERS);
+
+// Tags for categorizing tasks and blockers
+const FRONTEND_TAGS = ["website","frontend","front end","front-end","ui","ux","web","homepage","dashboard","page","screen","display","button","form","filter","dropdown","design","layout","responsive","mobile app","app","ios","android","flutter","react","css","html","animation","slider","banner","image","icon","view","scroll","modal","popup","card","chart","widget","navigation","menu","header","footer"];
+const BACKEND_TAGS  = ["backend","back end","back-end","api","endpoint","database","db","server","query","migration","model","controller","service","auth","token","route","payload","request","response","status","http","500","400","403","json","sql","seaf","seeder","schema","deploy","nginx","redis","cache","queue","cron","job","log","error","bug","fix","update","delete","insert","select","join","php","laravel","node","express","mongo","mysql","postgres"];
+const MOBILE_TAGS   = ["mobile","app","ios","android","flutter","react native","apk","play store","app store","push notification","deep link","version","build","release","testflight","firebase","screen","navigation","state","widget","bloc","provider","package","dependency"];
+
+function detectTags(text) {
+  const low = text.toLowerCase();
+  const tags = new Set();
+  if (FRONTEND_TAGS.some(t => low.includes(t))) tags.add("Frontend");
+  if (BACKEND_TAGS.some(t => low.includes(t)))  tags.add("Backend");
+  if (MOBILE_TAGS.some(t => low.includes(t)))   tags.add("Mobile");
+  return [...tags];
+}
+
+function isBlocker(text) {
+  const low = text.toLowerCase();
+  return ["block","stuck","bug","error","not work","issue","fail","broken","problem","crash","cannot","can't","500","400","failing","مشكلة","doesn't work","not showing","not loading","not appearing"].some(w => low.includes(w));
+}
 
 let cache = { lastUpdated: null, projects: [], standup: [], team: {} };
 let avatars = {};
@@ -82,25 +100,47 @@ function clean(raw){
 
 function fmt(ts){
   const d=new Date(parseFloat(ts)*1000);
-  return{date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),
-         time:d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),
-         iso:d.toISOString()};
+  return{
+    date:d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),
+    time:d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),
+    iso:d.toISOString(),
+    ts: ts
+  };
 }
 
-function extractTasks(text){
-  const lines=text.split("\n"), items=[];
-  for(const raw of lines){
-    const line=raw.trim(); if(!line) continue;
-    const num=line.match(/^\d+[\.\)]\s+(.+)/);
-    if(num&&num[1].trim().length>5){items.push({text:num[1].trim(),sub:false});continue;}
-    const letter=line.match(/^[a-eA-E][\.\)]\s+(.+)/);
-    if(letter&&letter[1].trim().length>5){items.push({text:letter[1].trim(),sub:true});continue;}
+// ── TASK EXTRACTION: handles nested sub-items (a. b. c.) linking to parent ──
+function extractTasks(text) {
+  const lines = text.split("\n");
+  const tasks = [];
+  let lastParentIdx = -1;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    // Numbered: "1." "2." etc
+    const num = line.match(/^(\d+)[\.\)]\s+(.+)/);
+    if (num && num[2].trim().length > 4) {
+      tasks.push({ text: num[2].trim(), num: parseInt(num[1]), sub: false, parentIdx: -1 });
+      lastParentIdx = tasks.length - 1;
+      continue;
+    }
+    // Sub-item: "a." "b." etc (link to last parent)
+    const letter = line.match(/^([a-zA-Z])[\.\)]\s+(.+)/);
+    if (letter && letter[2].trim().length > 3 && lastParentIdx >= 0) {
+      tasks.push({ text: letter[2].trim(), num: null, sub: true, parentIdx: lastParentIdx });
+      continue;
+    }
+    // Bullet - or • (only if we already started a list)
+    if (tasks.length > 0) {
+      const bullet = line.match(/^[-•*]\s+(.+)/);
+      if (bullet && bullet[1].trim().length > 5) {
+        tasks.push({ text: bullet[1].trim(), num: null, sub: true, parentIdx: lastParentIdx });
+      }
+    }
   }
-  return items.length>=2?items:[];
-}
 
-function isBlocker(t){
-  return ["block","stuck","bug","error","not work","issue","fail","broken","problem","crash","cannot","can't","500","failing","مشكلة"].some(w=>t.toLowerCase().includes(w));
+  return tasks.length >= 2 ? tasks : [];
 }
 
 function parseStandup(text,uid,dt){
@@ -121,43 +161,92 @@ async function fetchAll(){
   console.log("Fetching",new Date().toISOString());
   loadAvatars().catch(()=>{});
   const results=[];
+
   for(const proj of PROJECTS){
     try{
       const resp=await slackGet("conversations.history?channel="+proj.id+"&limit=200");
       if(!resp.ok){results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:resp.error});continue;}
-      const msgs=resp.messages||[], allTasks=[], allBlockers=[];
+      const msgs=resp.messages||[];
+      const allTasks=[], allBlockers=[];
+
       for(const m of msgs){
         if(!m.text||m.bot_id||m.subtype) continue;
-        const text=clean(m.text); if(!text||text.length<8) continue;
-        const dt=fmt(m.ts), name=uname(m.user), avatar=uav(m.user);
+        const text=clean(m.text);
+        if(!text||text.length<8) continue;
+        const dt=fmt(m.ts);
+        const name=uname(m.user), avatar=uav(m.user);
+
+        // Extract tasks with sub-item linking
         const items=extractTasks(text);
-        if(items.length) for(const item of items) allTasks.push({text:item.text,sub:item.sub,date:dt.date,time:dt.time,iso:dt.iso,from:name,avatar,uid:m.user});
-        if(isBlocker(text)&&text.length>25) allBlockers.push({text:text.substring(0,400),date:dt.date,time:dt.time,iso:dt.iso,user:name,avatar,uid:m.user});
-      }
-      const cutoff=Date.now()-172800000, recent=[];
-      for(const m of msgs){
-        if(recent.length>=5) break;
-        if(parseFloat(m.ts)*1000>cutoff&&m.text&&!m.bot_id&&!m.subtype){
-          const dt2=fmt(m.ts);
-          recent.push({text:clean(m.text).substring(0,200),date:dt2.date,time:dt2.time,iso:dt2.iso,user:uname(m.user),avatar:uav(m.user)});
+        if(items.length){
+          // Build parent text map for linking
+          const parentTexts={};
+          items.forEach((it,i)=>{ if(!it.sub) parentTexts[i]=it.text; });
+
+          items.forEach((item,i)=>{
+            const parentText = item.sub && item.parentIdx>=0 ? items[item.parentIdx]?.text : null;
+            const allTags = detectTags(item.text + (parentText||''));
+            allTasks.push({
+              text: item.text,
+              num: item.num,
+              sub: item.sub,
+              parentTask: parentText,
+              tags: allTags,
+              date: dt.date, time: dt.time, iso: dt.iso, ts: dt.ts,
+              from: name, avatar, uid: m.user,
+              msgTs: m.ts  // for linking updates
+            });
+          });
+        }
+
+        // Blockers detection with tags
+        if(isBlocker(text) && text.length > 20){
+          allBlockers.push({
+            text: text.substring(0,500),
+            tags: detectTags(text),
+            date: dt.date, time: dt.time, iso: dt.iso, ts: dt.ts,
+            user: name, avatar, uid: m.user,
+            msgTs: m.ts
+          });
         }
       }
+
+      // Recent activity — last 10 messages regardless of time (not just 48h)
+      const recent=[];
+      for(const m of msgs){
+        if(recent.length>=6) break;
+        if(m.text&&!m.bot_id&&!m.subtype){
+          const txt=clean(m.text); if(txt.length<5) continue;
+          const dt2=fmt(m.ts);
+          recent.push({text:txt.substring(0,200),date:dt2.date,time:dt2.time,iso:dt2.iso,user:uname(m.user),avatar:uav(m.user)});
+        }
+      }
+
       const members=(PROJ_MEMBERS[proj.name]||[]).map(uid=>({id:uid,name:uname(uid),avatar:uav(uid)}));
-      results.push({...proj,members,messageCount:msgs.length,tasks:allTasks.slice(0,50),blockers:allBlockers.slice(0,20),recentActivity:recent,lastMessage:msgs[0]?fmt(msgs[0].ts).iso:null,error:null});
+      results.push({...proj,members,messageCount:msgs.length,
+        tasks:allTasks.slice(0,80),
+        blockers:allBlockers.slice(0,30),
+        recentActivity:recent,
+        lastMessage:msgs[0]?fmt(msgs[0].ts).iso:null,error:null});
       console.log(proj.name,msgs.length,"msgs |",allTasks.length,"tasks |",allBlockers.length,"blockers");
-    }catch(err){results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:err.message});}
+    }catch(err){
+      results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:err.message});
+    }
   }
+
   let standup=[];
   try{
     const sr=await slackGet("conversations.history?channel="+STANDUP_CHANNEL+"&limit=200");
     if(sr.ok) for(const m of sr.messages||[]){if(!m.text||m.bot_id||m.subtype)continue;const text=clean(m.text);if(text.length<8)continue;standup.push(parseStandup(text,m.user,fmt(m.ts)));}
   }catch(e){}
+
   const team={};
   for(const uid of ALL_MEMBERS){
     const projs=Object.entries(PROJ_MEMBERS).filter(([,ms])=>ms.includes(uid)).map(([n])=>n);
     team[uid]={id:uid,name:uname(uid),avatar:uav(uid),projects:projs,blockerCount:0};
   }
   for(const p of results) for(const b of(p.blockers||[])) if(b.uid&&team[b.uid]) team[b.uid].blockerCount++;
+
   cache={lastUpdated:new Date().toISOString(),projects:results,standup,team};
   console.log("Done. Standup:",standup.length,"| Team:",Object.keys(team).length);
   return cache;
