@@ -3,6 +3,21 @@ const cors = require("cors");
 const cron = require("node-cron");
 const https = require("https");
 const path = require("path");
+const crypto = require("crypto");
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+const SALT = "mokcosalt2026";
+const USERS_AUTH = {
+  "KerolosNashat": "07401eba22fc3a00941394bb77172162e90b2d138847063cf90eb52a27cbc25c"
+};
+const SESSIONS = new Set();
+function hashPass(p){ return crypto.createHmac("sha256", SALT).update(p).digest("hex"); }
+function makeToken(){ return crypto.randomBytes(32).toString("hex"); }
+function requireAuth(req, res, next){
+  const token = req.headers["x-auth-token"] || req.query.token;
+  if(token && SESSIONS.has(token)) return next();
+  res.status(401).json({error:"Unauthorized"});
+}
 
 const app = express();
 app.use(cors());
@@ -318,13 +333,37 @@ async function fetchAll(){
 }
 
 // ── ROUTES ──────────────────────────────────────────────────────────────────
-app.get("/api/data",     async(q,s)=>{try{if(!cache.lastUpdated)await fetchAll();s.json(cache);}catch(e){s.status(500).json({error:e.message});}});
-app.post("/api/refresh", async(q,s)=>{try{const d=await fetchAll();s.json({ok:true,lastUpdated:d.lastUpdated});}catch(e){s.status(500).json({error:e.message});}});
+// Login — public
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+  const expected = USERS_AUTH[username];
+  if(!expected || hashPass(password) !== expected)
+    return res.status(401).json({error:"Invalid username or password"});
+  const token = makeToken();
+  SESSIONS.add(token);
+  res.json({ok:true, token});
+});
+
+// Logout
+app.post("/api/logout", (req, res) => {
+  const token = req.headers["x-auth-token"];
+  if(token) SESSIONS.delete(token);
+  res.json({ok:true});
+});
+
+// Verify token (used by frontend on load)
+app.get("/api/auth/check", (req, res) => {
+  const token = req.headers["x-auth-token"];
+  res.json({ok: !!(token && SESSIONS.has(token))});
+});
+
+app.get("/api/data",     requireAuth, async(q,s)=>{try{if(!cache.lastUpdated)await fetchAll();s.json(cache);}catch(e){s.status(500).json({error:e.message});}});
+app.post("/api/refresh", requireAuth, async(q,s)=>{try{const d=await fetchAll();s.json({ok:true,lastUpdated:d.lastUpdated});}catch(e){s.status(500).json({error:e.message});}});
 app.get("/api/health",   (q,s)=>s.json({status:"ok",lastUpdated:cache.lastUpdated}));
 
 // Sprint API
-app.get("/api/sprint",   (q,s)=>s.json(sprintState));
-app.post("/api/sprint",  (q,s)=>{
+app.get("/api/sprint",  requireAuth,   (q,s)=>s.json(sprintState));
+app.post("/api/sprint", requireAuth,  (q,s)=>{
   const {name,startDate,endDate,goals}=q.body;
   if(name) sprintState.name=name;
   if(startDate) sprintState.startDate=startDate;
@@ -335,7 +374,7 @@ app.post("/api/sprint",  (q,s)=>{
 });
 
 // Manual digest trigger
-app.post("/api/digest",  async(q,s)=>{try{await sendDailyDigest();s.json({ok:true});}catch(e){s.status(500).json({error:e.message});}});
+app.post("/api/digest", requireAuth,  async(q,s)=>{try{await sendDailyDigest();s.json({ok:true});}catch(e){s.status(500).json({error:e.message});}});
 
 app.get("*", (q,s)=>s.sendFile(path.join(__dirname,"public","index.html")));
 
