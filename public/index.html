@@ -349,11 +349,68 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
 #toast{position:fixed;bottom:18px;right:18px;z-index:400;background:var(--card2);border:1px solid var(--line2);border-radius:9px;padding:10px 15px;font-size:12px;display:none;align-items:center;gap:8px;box-shadow:0 6px 28px rgba(0,0,0,.4);animation:tpop .18s ease;}
 @keyframes tpop{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
+
+/* ═══════════════════════════════════════════════════════ LOGIN */
+#login-screen{position:fixed;inset:0;z-index:700;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:20px;}
+#login-screen.hidden{display:none;}
+.login-box{width:100%;max-width:380px;animation:fi .3s ease;}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;justify-content:center;}
+.login-logo-m{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--violet));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:18px;color:#fff;}
+.login-logo-txt{font-family:'Bebas Neue';font-size:20px;letter-spacing:2.5px;color:var(--white);}
+.login-card{background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:28px 28px 24px;}
+.login-title{font-family:'Bebas Neue';font-size:22px;letter-spacing:1.5px;color:var(--white);margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:24px;}
+.login-fld{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.login-fld label{font-family:'JetBrains Mono';font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);}
+.login-inp-wrap{display:flex;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:8px;transition:border-color .2s;overflow:hidden;}
+.login-inp-wrap:focus-within{border-color:var(--blue);}
+.login-inp{flex:1;background:none;border:none;outline:none;padding:10px 13px;color:var(--text);font-family:'DM Sans';font-size:13px;}
+.login-inp::placeholder{color:var(--dim);}
+.login-eye{padding:0 12px;color:var(--muted);cursor:pointer;font-size:14px;user-select:none;transition:color .15s;}
+.login-eye:hover{color:var(--text);}
+.login-btn{width:100%;padding:11px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;transition:all .18s;margin-top:8px;}
+.login-btn:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,144,247,.35);}
+.login-btn:active{transform:translateY(0);}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.login-err{display:none;background:rgba(239,79,79,.08);border:1px solid rgba(239,79,79,.2);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;text-align:center;}
+.login-err.show{display:block;}
+.login-footer{text-align:center;margin-top:16px;font-family:'JetBrains Mono';font-size:9px;color:var(--dim);letter-spacing:1px;}
 /* mobile tweaks */
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(3,1fr);}.hdr-time,.hdr-upd{display:none;}.hdr-search{max-width:160px;}}
 </style>
 </head>
 <body>
+
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-m">M</div>
+      <span class="login-logo-txt">THE MOK CO.</span>
+    </div>
+    <div class="login-card">
+      <div class="login-title">Welcome Back</div>
+      <div class="login-sub">Sign in to access the Command Center</div>
+      <div class="login-fld">
+        <label>Username</label>
+        <div class="login-inp-wrap">
+          <input class="login-inp" type="text" id="l-user" placeholder="KerolosNashat" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('l-pass').focus()">
+        </div>
+      </div>
+      <div class="login-fld">
+        <label>Password</label>
+        <div class="login-inp-wrap">
+          <input class="login-inp" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <span class="login-eye" id="l-eye" onclick="togglePass()">👁</span>
+        </div>
+      </div>
+      <button class="login-btn" id="l-btn" onclick="doLogin()">SIGN IN</button>
+      <div class="login-err" id="l-err">Invalid username or password</div>
+    </div>
+    <div class="login-footer">THE MOK COMPANY · COMMAND CENTER · PRIVATE</div>
+  </div>
+</div>
 
 <div id="loading">
   <div class="ld-logo">THE MOK CO.</div>
@@ -387,6 +444,7 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
     <span class="hdr-upd" id="hupd"></span>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
+    <button class="icon-btn" onclick="doLogout()" title="Sign out" style="color:var(--red)">⏻</button>
     <button class="refbtn" id="refBtn" onclick="doRefresh()">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       Refresh
@@ -973,11 +1031,64 @@ function render(d){
 }
 
 // ── LOAD & REFRESH ─────────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────────────────
+let authToken = localStorage.getItem('mok_token') || null;
+
+function authHeaders(){
+  return authToken ? {'x-auth-token': authToken} : {};
+}
+
+function showLogin(){ document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('loading').style.display='none'; }
+function hideLogin(){ document.getElementById('login-screen').classList.add('hidden'); }
+
+function togglePass(){
+  const p=document.getElementById('l-pass');
+  p.type=p.type==='password'?'text':'password';
+  document.getElementById('l-eye').textContent=p.type==='password'?'👁':'🙈';
+}
+
+async function doLogin(){
+  const u=document.getElementById('l-user').value.trim();
+  const p=document.getElementById('l-pass').value;
+  const btn=document.getElementById('l-btn');
+  const err=document.getElementById('l-err');
+  if(!u||!p){err.textContent='Please enter username and password.';err.classList.add('show');return;}
+  btn.disabled=true;btn.textContent='SIGNING IN…';err.classList.remove('show');
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(d.ok){
+      authToken=d.token;
+      localStorage.setItem('mok_token',authToken);
+      hideLogin();
+      load(false);
+    } else {
+      err.textContent='Invalid username or password.';err.classList.add('show');
+      document.getElementById('l-pass').value='';
+    }
+  }catch(e){err.textContent='Connection error. Try again.';err.classList.add('show');}
+  finally{btn.disabled=false;btn.textContent='SIGN IN';}
+}
+
+async function doLogout(){
+  try{await fetch('/api/logout',{method:'POST',headers:authHeaders()});}catch(e){}
+  authToken=null;
+  localStorage.removeItem('mok_token');
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('loading').style.opacity='1';
+  showLogin();
+  document.getElementById('l-user').value='';
+  document.getElementById('l-pass').value='';
+  document.getElementById('l-err').classList.remove('show');
+}
+
 let prevTs=null;
 async function load(silent){
   try{
     if(!silent) document.getElementById('ldmsg').textContent='Fetching Slack data…';
-    const r=await fetch('/api/data'),d=await r.json();
+    const r=await fetch('/api/data',{headers:authHeaders()});
+    if(r.status===401){showLogin();return;}
+    const d=await r.json();
     if(!silent){render(d);setTimeout(()=>{const l=document.getElementById('loading');l.style.opacity='0';setTimeout(()=>l.style.display='none',400);},300);}
     else if(d.lastUpdated!==prevTs){render(d);if(prevTs)toast('🔄 Dashboard updated');}
     prevTs=d.lastUpdated;
@@ -988,13 +1099,32 @@ async function load(silent){
 
 async function doRefresh(){
   const b=document.getElementById('refBtn');b.classList.add('spin');b.disabled=true;
-  try{await fetch('/api/refresh',{method:'POST'});await load(false);toast('✅ Refreshed from Slack');}
-  finally{b.classList.remove('spin');b.disabled=false;b.textContent='';b.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh';}
+  try{
+    const r=await fetch('/api/refresh',{method:'POST',headers:authHeaders()});
+    if(r.status===401){showLogin();return;}
+    await load(false);toast('✅ Refreshed from Slack');
+  }finally{b.classList.remove('spin');b.disabled=false;b.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh';}
+}
+
+async function sendDigest(){
+  try{toast('⏳ Sending digest…');const r=await fetch('/api/digest',{method:'POST',headers:authHeaders()});if(r.status===401){showLogin();return;}toast('✅ Digest sent to #standup!');}
+  catch(e){toast('❌ Error sending digest');}
 }
 
 function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.style.display='flex';clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display='none',3200);}
 
-load(false);
+// On load: check if we have a valid token first
+(async()=>{
+  if(authToken){
+    try{
+      const r=await fetch('/api/auth/check',{headers:{'x-auth-token':authToken}});
+      const d=await r.json();
+      if(d.ok){ load(false); }
+      else{ authToken=null;localStorage.removeItem('mok_token');showLogin(); }
+    }catch(e){ showLogin(); }
+  } else { showLogin(); }
+})();
+
 setInterval(()=>load(true),30000);
 setInterval(()=>{const n=new Date();document.getElementById('htime').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});},30000);
 </script>
