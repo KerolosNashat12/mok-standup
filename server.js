@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 3000;
 
 const PROJECTS = [
   { id: "C0ADWK5LGT1", name: "CairoLive", color: "#f97316" },
-  { id: "C0AB6NQ061X", name: "Al Nasser", color: "#10b981" },
-  { id: "C0ABM2D50LE", name: "Print Out",  color: "#8b5cf6" },
-  { id: "C0AC25HP64T", name: "Turbo",      color: "#eab308" },
+  { id: "C0AB6NQ061X", name: "Al Nasser", color: "#2dd4a0" },
+  { id: "C0ABM2D50LE", name: "Print Out",  color: "#9b6dff" },
+  { id: "C0AC25HP64T", name: "Turbo",      color: "#f5a623" },
 ];
 const STANDUP_CHANNEL = "C0AK4KTKV2S";
 
@@ -47,7 +47,15 @@ const PROJ_MEMBERS = {
 
 const ALL_MEMBERS = Object.keys(USERS);
 
-const FRONTEND_TAGS = ["website","frontend","front end","front-end","ui","ux","web","homepage","dashboard","page","screen","display","button","form","filter","dropdown","design","layout","slider","banner","image","icon","view","scroll","modal","card","navigation","menu","header","footer","css","html","react","animation"];
+// Sprint state (persisted in memory, reset on redeploy — acceptable for now)
+let sprintState = {
+  name: "Sprint 1",
+  startDate: null,
+  endDate: null,
+  goals: []
+};
+
+const FRONTEND_TAGS = ["website","frontend","front end","front-end","ui","ux","web","homepage","dashboard","page","screen","display","button","form","filter","dropdown","design","layout","slider","banner","image","icon","view","scroll","modal","card","navigation","menu","header","footer","css","html","react","animation","responsive"];
 const BACKEND_TAGS  = ["backend","back end","back-end","api","endpoint","database","db","server","query","migration","model","controller","service","auth","token","route","payload","request","response","500","400","403","json","sql","seeder","schema","deploy","nginx","redis","cache","php","laravel","node","express","mongo","mysql","postgres"];
 const MOBILE_TAGS   = ["mobile","ios","android","flutter","react native","apk","play store","app store","push notification","deep link","testflight","firebase","bloc","provider"];
 
@@ -65,13 +73,12 @@ function isBlocker(text) {
   return ["block","stuck","bug","error","not work","issue","fail","broken","problem","crash","cannot","can't","500","400","failing","doesn't work","not showing","not loading","not appearing","مشكلة"].some(w => low.includes(w));
 }
 
-// Detect "update task 2: ...", "done task 1: ...", "progress task 3: ...", "fixed task 2: ..."
 function detectTaskUpdate(text) {
   const low = text.toLowerCase().trim();
-  const prefixes = "(update|done|progress|fixed|completed|finish|finished|deployed|merged|tested|resolv)";
-  const m = low.match(new RegExp(`^${prefixes}[d]?\\s+task\\s+(\\d+)\\s*[:\\-]?\\s*(.*)`, "s"));
+  const pfx = "(update|done|progress|fixed|completed|finish|finished|deployed|merged|tested|resolved)";
+  const m = low.match(new RegExp(`^${pfx}[d]?\\s+task\\s+(\\d+)\\s*[:\\-]?\\s*(.*)`, "s"));
   if (m) return { type: m[1], taskNum: parseInt(m[2]), detail: m[3].trim()||text };
-  const m2 = low.match(new RegExp(`^task\\s+(\\d+)\\s+${prefixes}[d]?\\s*[:\\-]?\\s*(.*)`, "s"));
+  const m2 = low.match(new RegExp(`^task\\s+(\\d+)\\s+${pfx}[d]?\\s*[:\\-]?\\s*(.*)`, "s"));
   if (m2) return { type: m2[2], taskNum: parseInt(m2[1]), detail: m2[3].trim()||text };
   return null;
 }
@@ -83,6 +90,18 @@ function slackGet(ep) {
   return new Promise((res,rej) => {
     const o={hostname:"slack.com",path:"/api/"+ep,headers:{Authorization:"Bearer "+SLACK_TOKEN}};
     https.get(o,r=>{let d="";r.on("data",c=>d+=c);r.on("end",()=>{try{res(JSON.parse(d));}catch(e){rej(e);}});}).on("error",rej);
+  });
+}
+
+async function slackPost(ep, body) {
+  return new Promise((res,rej) => {
+    const data = JSON.stringify(body);
+    const o = {
+      hostname:"slack.com", path:"/api/"+ep, method:"POST",
+      headers:{"Authorization":"Bearer "+SLACK_TOKEN,"Content-Type":"application/json","Content-Length":Buffer.byteLength(data)}
+    };
+    const req = https.request(o, r=>{let d="";r.on("data",c=>d+=c);r.on("end",()=>{try{res(JSON.parse(d));}catch(e){rej(e);}});});
+    req.on("error",rej); req.write(data); req.end();
   });
 }
 
@@ -118,11 +137,9 @@ function extractTasks(text) {
   const tasks = [];
   let lastParentIdx = -1;
   let foundList = false;
-
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-
     const num = line.match(/^(\d+)[\.\)]\s+(.+)/);
     if (num && num[2].trim().length > 4) {
       tasks.push({ text: num[2].trim(), num: parseInt(num[1]), sub: false, parentIdx: -1 });
@@ -155,6 +172,54 @@ function parseStandup(text,uid,dt){
   return o;
 }
 
+// Build and send daily digest to Slack
+async function sendDailyDigest() {
+  try {
+    if(!cache.lastUpdated) return;
+    const ps = cache.projects || [];
+    const today = new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+
+    const totalTasks = ps.reduce((s,p)=>s+(p.tasks||[]).length,0);
+    const totalDone  = ps.reduce((s,p)=>s+(p.tasks||[]).filter(t=>t.updates&&t.updates.some(u=>["done","fixed","deployed","merged","resolved","finished","completed"].includes(u.type))).length,0);
+    const totalBlk   = ps.reduce((s,p)=>s+(p.blockers||[]).length,0);
+    const todaySU    = (cache.standup||[]).filter(s=>s.date===today);
+
+    let msg = `*🌅 Good morning, Mok Company!* — Daily Digest for *${today}*\n\n`;
+    msg += `📊 *Overview:*  ${totalTasks} tasks across all projects  |  ✅ ${totalDone} marked done  |  🚨 ${totalBlk} active blockers\n\n`;
+
+    msg += `*📋 Project Snapshot:*\n`;
+    ps.forEach(p => {
+      const done = (p.tasks||[]).filter(t=>t.updates&&t.updates.some(u=>["done","fixed","deployed","merged","resolved","finished","completed"].includes(u.type))).length;
+      const blk  = (p.blockers||[]).length;
+      const status = blk > 0 ? `⚠️ ${blk} blocker${blk>1?'s':''}` : "✅ clear";
+      msg += `• *${p.name}* — ${(p.tasks||[]).length} tasks, ${done} done — ${status}\n`;
+    });
+
+    if(todaySU.length > 0) {
+      msg += `\n*📝 Standup Posted Today (${todaySU.length}/${Object.keys(USERS).length}):*\n`;
+      todaySU.forEach(s => { msg += `• ${s.name}`; if(s.blockers && !["none","no","n/a","—","-"].includes(s.blockers.toLowerCase().trim())) msg += ` 🚨`; msg += "\n"; });
+      const missing = Object.values(USERS).filter(n => !todaySU.find(s=>s.name===n));
+      if(missing.length <= 8) msg += `_Not yet posted: ${missing.join(", ")}_\n`;
+    } else {
+      msg += `\n_⏰ No standup posts yet today — reminder: post in #standup!_\n`;
+    }
+
+    if(totalBlk > 0) {
+      msg += `\n*🚨 Open Blockers:*\n`;
+      ps.forEach(p => (p.blockers||[]).slice(0,2).forEach(b => {
+        msg += `• [${p.name}] *${b.user}*: ${b.text.substring(0,100)}${b.text.length>100?"…":""}\n`;
+      }));
+    }
+
+    msg += `\n_Dashboard → https://mok-standup-production-c282.up.railway.app/_`;
+
+    await slackPost("chat.postMessage", { channel: STANDUP_CHANNEL, text: msg });
+    console.log("Daily digest sent at", new Date().toISOString());
+  } catch(e) {
+    console.error("Digest error:", e.message);
+  }
+}
+
 async function fetchAll(){
   console.log("Fetching",new Date().toISOString());
   loadAvatars().catch(()=>{});
@@ -174,14 +239,12 @@ async function fetchAll(){
         const dt=fmt(m.ts);
         const name=uname(m.user), avatar=uav(m.user);
 
-        // Check for task update message first
         const upd=detectTaskUpdate(text);
         if(upd){
           rawUpdates.push({...upd, from:name, avatar, date:dt.date, time:dt.time, iso:dt.iso, msgTs:m.ts});
           continue;
         }
 
-        // Extract task list
         const items=extractTasks(text);
         if(items.length){
           items.forEach(item=>{
@@ -189,14 +252,13 @@ async function fetchAll(){
             allTasks.push({
               text:item.text, num:item.num, sub:item.sub, parentTask:parentText,
               tags:detectTags(item.text+(parentText||'')),
-              updates:[], // will be filled below
+              updates:[],
               date:dt.date, time:dt.time, iso:dt.iso, ts:dt.ts,
               from:name, avatar, uid:m.user, msgTs:m.ts
             });
           });
         }
 
-        // Blocker detection (skip very short messages)
         if(isBlocker(text)&&text.length>20){
           allBlockers.push({
             text:text.substring(0,500),
@@ -207,25 +269,18 @@ async function fetchAll(){
         }
       }
 
-      // Link updates to tasks by task number
-      // Tasks and updates are collected newest-first; we match by task number within the same project
       for(const upd of rawUpdates){
-        // Find the most recent task with this number
         const matchedTask = allTasks.find(t=>!t.sub && t.num===upd.taskNum);
-        if(matchedTask){
-          matchedTask.updates.push(upd);
-        }
-        // If no match, still show as standalone update on task with that index
+        if(matchedTask) matchedTask.updates.push(upd);
       }
 
-      // Recent activity: last 6 real messages
       const recent=[];
       for(const m of msgs){
         if(recent.length>=6) break;
         if(m.text&&!m.bot_id&&!m.subtype){
           const txt=clean(m.text); if(txt.length<5) continue;
           const dt2=fmt(m.ts);
-          recent.push({text:txt.substring(0,200),date:dt2.date,time:dt2.time,iso:dt2.iso,user:uname(m.user),avatar:uav(m.user)});
+          recent.push({text:txt.substring(0,200),date:dt2.date,time:dt2.time,iso:dt2.iso,user:uname(m.user),avatar:uav(m.user),msgTs:m.ts});
         }
       }
 
@@ -237,9 +292,7 @@ async function fetchAll(){
         recentActivity:recent,
         lastMessage:msgs[0]?fmt(msgs[0].ts).iso:null, error:null
       });
-      console.log(proj.name, msgs.length,"msgs |",allTasks.length,"tasks |",allBlockers.length,"blockers |",rawUpdates.length,"updates");
     }catch(err){
-      console.log("ERR",proj.name,err.message);
       results.push({...proj,members:[],tasks:[],blockers:[],recentActivity:[],messageCount:0,error:err.message});
     }
   }
@@ -253,20 +306,42 @@ async function fetchAll(){
   const team={};
   for(const uid of ALL_MEMBERS){
     const projs=Object.entries(PROJ_MEMBERS).filter(([,ms])=>ms.includes(uid)).map(([n])=>n);
-    team[uid]={id:uid,name:uname(uid),avatar:uav(uid),projects:projs,blockerCount:0};
+    team[uid]={id:uid,name:uname(uid),avatar:uav(uid),projects:projs,blockerCount:0,taskCount:0};
   }
-  for(const p of results) for(const b of(p.blockers||[])) if(b.uid&&team[b.uid]) team[b.uid].blockerCount++;
+  for(const p of results){
+    for(const b of(p.blockers||[])) if(b.uid&&team[b.uid]) team[b.uid].blockerCount++;
+    for(const t of(p.tasks||[])) if(t.uid&&team[t.uid]) team[t.uid].taskCount++;
+  }
 
-  cache={lastUpdated:new Date().toISOString(),projects:results,standup,team};
-  console.log("Done. Standup:",standup.length,"| Team:",Object.keys(team).length);
+  cache={lastUpdated:new Date().toISOString(),projects:results,standup,team,sprint:sprintState};
   return cache;
 }
 
+// ── ROUTES ──────────────────────────────────────────────────────────────────
 app.get("/api/data",     async(q,s)=>{try{if(!cache.lastUpdated)await fetchAll();s.json(cache);}catch(e){s.status(500).json({error:e.message});}});
 app.post("/api/refresh", async(q,s)=>{try{const d=await fetchAll();s.json({ok:true,lastUpdated:d.lastUpdated});}catch(e){s.status(500).json({error:e.message});}});
 app.get("/api/health",   (q,s)=>s.json({status:"ok",lastUpdated:cache.lastUpdated}));
-app.get("*",             (q,s)=>s.sendFile(path.join(__dirname,"public","index.html")));
 
-cron.schedule("*/2 * * * *",()=>fetchAll().catch(console.error));
+// Sprint API
+app.get("/api/sprint",   (q,s)=>s.json(sprintState));
+app.post("/api/sprint",  (q,s)=>{
+  const {name,startDate,endDate,goals}=q.body;
+  if(name) sprintState.name=name;
+  if(startDate) sprintState.startDate=startDate;
+  if(endDate) sprintState.endDate=endDate;
+  if(goals) sprintState.goals=goals;
+  cache.sprint=sprintState;
+  s.json({ok:true,sprint:sprintState});
+});
+
+// Manual digest trigger
+app.post("/api/digest",  async(q,s)=>{try{await sendDailyDigest();s.json({ok:true});}catch(e){s.status(500).json({error:e.message});}});
+
+app.get("*", (q,s)=>s.sendFile(path.join(__dirname,"public","index.html")));
+
+// Cron: refresh every 2 min, digest at 9am Cairo time (UTC+2 = 7am UTC)
+cron.schedule("*/2 * * * *",  ()=>fetchAll().catch(console.error));
+cron.schedule("0 7 * * *",    ()=>sendDailyDigest().catch(console.error));
+
 fetchAll().catch(console.error);
 app.listen(PORT,()=>console.log("Port",PORT));
