@@ -375,6 +375,44 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
 .login-err{display:none;background:rgba(239,79,79,.08);border:1px solid rgba(239,79,79,.2);border-radius:7px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;text-align:center;}
 .login-err.show{display:block;}
 .login-footer{text-align:center;margin-top:16px;font-family:'JetBrains Mono';font-size:9px;color:var(--dim);letter-spacing:1px;}
+
+/* ═══════════════════════════════════════════════════════ NOTIFICATIONS */
+.notif-btn{position:relative;}
+.notif-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-family:'JetBrains Mono';font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--ink);animation:notifpop .25s cubic-bezier(.34,1.56,.64,1);}
+@keyframes notifpop{from{transform:scale(0)}to{transform:scale(1)}}
+.notif-modal{position:fixed;top:58px;right:16px;z-index:450;width:420px;max-width:calc(100vw - 32px);background:var(--paper);border:1px solid var(--line2);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.5);display:none;flex-direction:column;max-height:calc(100vh - 80px);animation:fi .18s ease;}
+.notif-modal.open{display:flex;}
+.nm-hdr{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.nm-title{font-family:'Bebas Neue';font-size:16px;letter-spacing:1px;color:var(--white);flex:1;}
+.nm-tabs{display:flex;gap:3px;margin-right:4px;}
+.nm-tab{padding:3px 10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--muted);font-family:'JetBrains Mono';font-size:8.5px;cursor:pointer;transition:all .15s;}
+.nm-tab.on{background:var(--card2);color:var(--white);border-color:var(--line2);}
+.nm-close{width:24px;height:24px;border-radius:6px;background:var(--card2);border:1px solid var(--line);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;flex-shrink:0;}
+.nm-close:hover{color:var(--text);}
+.nm-body{overflow-y:auto;flex:1;padding:6px;}
+.nm-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:12px;}
+.nm-item{display:flex;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid transparent;margin-bottom:3px;cursor:default;transition:all .15s;position:relative;}
+.nm-item:hover{background:var(--card);border-color:var(--line);}
+.nm-item.unread{background:var(--card2);border-color:var(--line);}
+.nm-item.unread::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--nc);border-radius:3px 0 0 3px;}
+.nm-right{flex:1;min-width:0;}
+.nm-top{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;}
+.nm-user{font-size:11.5px;font-weight:700;color:var(--white);}
+.nm-chan{font-family:'JetBrains Mono';font-size:8px;padding:1px 6px;border-radius:3px;border:1px solid;}
+.nm-type{font-family:'JetBrains Mono';font-size:8px;padding:1px 6px;border-radius:3px;font-weight:600;}
+.nm-type.tasks{background:rgba(45,207,158,.1);color:var(--green);border:1px solid rgba(45,207,158,.2);}
+.nm-type.blocker{background:rgba(239,79,79,.1);color:var(--red);border:1px solid rgba(239,79,79,.2);}
+.nm-type.update{background:rgba(79,144,247,.1);color:var(--blue);border:1px solid rgba(79,144,247,.2);}
+.nm-type.standup{background:rgba(155,109,255,.1);color:var(--violet);border:1px solid rgba(155,109,255,.2);}
+.nm-type.message{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--line);}
+.nm-dt{font-family:'JetBrains Mono';font-size:8px;color:var(--muted);margin-left:auto;}
+.nm-txt{font-size:11.5px;color:var(--body);line-height:1.55;word-break:break-word;}
+.nm-slink{font-family:'JetBrains Mono';font-size:8.5px;color:var(--blue);text-decoration:none;padding:1px 6px;border:1px solid rgba(79,144,247,.2);border-radius:3px;margin-top:5px;display:inline-block;transition:all .15s;}
+.nm-slink:hover{background:rgba(79,144,247,.1);}
+.nm-footer{padding:10px 14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.nm-footer-txt{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);}
+.nm-clear{font-family:'JetBrains Mono';font-size:9px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;transition:color .15s;}
+.nm-clear:hover{color:var(--white);}
 /* mobile tweaks */
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(3,1fr);}.hdr-time,.hdr-upd{display:none;}.hdr-search{max-width:160px;}}
 </style>
@@ -421,6 +459,27 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
 
 <div id="toast"></div>
 
+
+<!-- NOTIFICATION MODAL -->
+<div class="notif-modal" id="notifModal">
+  <div class="nm-hdr">
+    <span class="nm-title">Notifications</span>
+    <div class="nm-tabs">
+      <button class="nm-tab on" onclick="nmFilter('all',this)">All</button>
+      <button class="nm-tab" onclick="nmFilter('blocker',this)">🚨</button>
+      <button class="nm-tab" onclick="nmFilter('tasks',this)">✅</button>
+      <button class="nm-tab" onclick="nmFilter('standup',this)">📋</button>
+      <button class="nm-tab" onclick="nmFilter('update',this)">🔄</button>
+    </div>
+    <button class="nm-close" onclick="closeNotifModal()">✕</button>
+  </div>
+  <div class="nm-body" id="nmBody"><div class="nm-empty">Loading…</div></div>
+  <div class="nm-footer">
+    <span class="nm-footer-txt" id="nm-last">—</span>
+    <button class="nm-clear" onclick="markAllRead()">Mark all read</button>
+  </div>
+</div>
+
 <!-- MEMBER PROFILE MODAL -->
 <div class="modal-bg hidden" id="memberModal" onclick="closeMemberModal(event)">
   <div class="modal">
@@ -443,6 +502,10 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
     <span class="hdr-time" id="htime">—</span>
     <span class="hdr-upd" id="hupd"></span>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <button class="icon-btn notif-btn" id="notifBtn" onclick="toggleNotifModal()" title="Notifications">
+      🔔
+      <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+    </button>
     <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☀</button>
     <button class="icon-btn" onclick="doLogout()" title="Sign out" style="color:var(--red)">⏻</button>
     <button class="refbtn" id="refBtn" onclick="doRefresh()">
@@ -1062,6 +1125,7 @@ async function doLogin(){
       localStorage.setItem('mok_token',authToken);
       hideLogin();
       load(false);
+      setTimeout(()=>loadNotifications(false), 1500);
     } else {
       err.textContent='Invalid username or password.';err.classList.add('show');
       document.getElementById('l-pass').value='';
@@ -1119,14 +1183,138 @@ function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.s
     try{
       const r=await fetch('/api/auth/check',{headers:{'x-auth-token':authToken}});
       const d=await r.json();
-      if(d.ok){ load(false); }
+      if(d.ok){ load(false); setTimeout(()=>loadNotifications(false), 1500); }
       else{ authToken=null;localStorage.removeItem('mok_token');showLogin(); }
     }catch(e){ showLogin(); }
   } else { showLogin(); }
 })();
 
-setInterval(()=>load(true),30000);
+setInterval(()=>{ load(true); loadNotifications(true); },30000);
 setInterval(()=>{const n=new Date();document.getElementById('htime').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});},30000);
+
+// ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+let nmFilter_val = 'all';
+let notifData = [];
+let lastSeenTs = parseFloat(localStorage.getItem('mok_lastSeen') || '0');
+let notifOpen = false;
+
+const NM_TYPE_LABELS = {tasks:'✅ Tasks',blocker:'🚨 Blocker',update:'🔄 Update',standup:'📋 Standup',message:'💬 Message'};
+const NM_TYPE_ICONS  = {tasks:'tasks',blocker:'blocker',update:'update',standup:'standup',message:'message'};
+
+function toggleNotifModal(){
+  notifOpen = !notifOpen;
+  document.getElementById('notifModal').classList.toggle('open', notifOpen);
+  if(notifOpen){ loadNotifications(false); }
+}
+function closeNotifModal(){
+  notifOpen = false;
+  document.getElementById('notifModal').classList.remove('open');
+}
+
+// Close when clicking outside
+document.addEventListener('click', e => {
+  const modal = document.getElementById('notifModal');
+  const btn   = document.getElementById('notifBtn');
+  if(notifOpen && !modal.contains(e.target) && !btn.contains(e.target)) closeNotifModal();
+});
+
+function nmFilter(f, el){
+  nmFilter_val = f;
+  document.querySelectorAll('.nm-tab').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderNotifications();
+}
+
+function markAllRead(){
+  if(!notifData.length) return;
+  const latest = notifData[0]?.ts;
+  if(latest){ lastSeenTs = parseFloat(latest); localStorage.setItem('mok_lastSeen', lastSeenTs); }
+  document.getElementById('notifBadge').style.display = 'none';
+  renderNotifications();
+}
+
+async function loadNotifications(silent){
+  if(!authToken) return;
+  try{
+    // Always fetch last 24h on open, otherwise just since last poll
+    const since = silent ? (lastSeenTs || 0) : Math.max(0, Date.now()/1000 - 86400);
+    const r = await fetch('/api/notifications?since='+since, {headers: authHeaders()});
+    if(r.status === 401){ showLogin(); return; }
+    const d = await r.json();
+    if(!d.ok) return;
+
+    if(silent){
+      // Merge with existing, deduplicate by ts
+      const existingTs = new Set(notifData.map(n=>n.ts));
+      const newOnes = (d.notifications||[]).filter(n=>!existingTs.has(n.ts));
+      if(newOnes.length){
+        notifData = [...newOnes, ...notifData].slice(0, 200);
+        const unread = notifData.filter(n => parseFloat(n.ts) > lastSeenTs).length;
+        updateBadge(unread);
+        if(!notifOpen && newOnes.length){
+          // Show toast for each new notable message
+          newOnes.slice(0,3).forEach(n=>{
+            const icon = n.type==='blocker'?'🚨':n.type==='tasks'?'✅':n.type==='standup'?'📋':n.type==='update'?'🔄':'💬';
+            toast(icon+' <strong>'+xe(n.user)+'</strong> in #'+xe(n.channel)+': '+xe(n.text.substring(0,60))+(n.text.length>60?'…':''));
+          });
+        }
+        if(notifOpen) renderNotifications();
+      }
+    } else {
+      notifData = d.notifications || [];
+      const unread = notifData.filter(n => parseFloat(n.ts) > lastSeenTs).length;
+      updateBadge(unread);
+      renderNotifications();
+    }
+  }catch(e){}
+}
+
+function updateBadge(count){
+  const b = document.getElementById('notifBadge');
+  if(count > 0){ b.textContent = count > 99 ? '99+' : count; b.style.display = 'flex'; }
+  else { b.style.display = 'none'; }
+}
+
+function renderNotifications(){
+  const w = document.getElementById('nmBody');
+  let items = notifData;
+  if(nmFilter_val !== 'all') items = items.filter(n => n.type === nmFilter_val);
+
+  if(!items.length){
+    w.innerHTML = '<div class="nm-empty">'+( nmFilter_val==='all' ? '🔔 No notifications yet<br><span style="font-size:11px;color:var(--dim)">New Slack messages will appear here</span>' : 'No '+nmFilter_val+' notifications' )+'</div>';
+    return;
+  }
+
+  const total = notifData.filter(n => parseFloat(n.ts) > lastSeenTs).length;
+  document.getElementById('nm-last').textContent = total + ' unread · '+items.length+' shown';
+
+  w.innerHTML = items.map(n => {
+    const unread = parseFloat(n.ts) > lastSeenTs;
+    const col = n.color || '#4f90f7';
+    const sl = `https://themokcompany.slack.com/archives/${n.channelId}/p${n.ts.replace('.', '')}`;
+    const typeClass = NM_TYPE_ICONS[n.type] || 'message';
+    const typeLabel = NM_TYPE_LABELS[n.type] || '💬 Message';
+    return `<div class="nm-item${unread?' unread':''}" style="--nc:${col}">
+      ${av({name:n.user,avatar:n.avatar},30)}
+      <div class="nm-right">
+        <div class="nm-top">
+          <span class="nm-user">${xe(n.user)}</span>
+          <span class="nm-chan" style="color:${col};border-color:${col}33">#${xe(n.channel)}</span>
+          <span class="nm-type ${typeClass}">${typeLabel}</span>
+          <span class="nm-dt">${xe(n.time)}</span>
+        </div>
+        <div class="nm-txt">${xe(n.text.substring(0,200))}${n.text.length>200?'…':''}</div>
+        <a href="${sl}" target="_blank" class="nm-slink">💬 View in Slack</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Poll for new notifications every 30s (reuse the main poll interval)
+setInterval(() => loadNotifications(true), 30000);
+// Initial load after auth
+window._notifReady = () => loadNotifications(false);
+
 </script>
 </body>
 </html>
