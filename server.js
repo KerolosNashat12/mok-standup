@@ -373,8 +373,45 @@ app.post("/api/sprint", requireAuth,  (q,s)=>{
   s.json({ok:true,sprint:sprintState});
 });
 
+
 // Manual digest trigger
-app.post("/api/digest", requireAuth,  async(q,s)=>{try{await sendDailyDigest();s.json({ok:true});}catch(e){s.status(500).json({error:e.message});}});
+app.post("/api/digest", requireAuth, async(q,s)=>{try{await sendDailyDigest();s.json({ok:true});}catch(e){s.status(500).json({error:e.message});}});
+
+// Notifications — all messages newer than ?since= across every channel
+app.get("/api/notifications", requireAuth, async(req,res)=>{
+  try{
+    const since=parseFloat(req.query.since||"0");
+    const notifs=[];
+    const allCh=[
+      ...PROJECTS.map(p=>({id:p.id,name:p.name,color:p.color,type:"project"})),
+      {id:STANDUP_CHANNEL,name:"standup",color:"#4f90f7",type:"standup"}
+    ];
+    for(const ch of allCh){
+      try{
+        const ep="conversations.history?channel="+ch.id+"&limit=50"+(since?"&oldest="+since:"");
+        const resp=await slackGet(ep);
+        if(!resp.ok) continue;
+        for(const m of(resp.messages||[])){
+          if(!m.text||m.bot_id||m.subtype) continue;
+          const ts=parseFloat(m.ts);
+          if(since&&ts<=since) continue;
+          const text=clean(m.text);
+          if(!text||text.length<4) continue;
+          const dt=fmt(m.ts);
+          const low=text.toLowerCase();
+          let type="message";
+          if(/^(update|done|progress|fixed|completed|deployed|merged)\s+task/i.test(text)) type="update";
+          else if(text.split("\n").filter(l=>/^\d+[.)]\s/.test(l.trim())).length>=2) type="tasks";
+          else if(["block","stuck","bug","error","not work","issue","fail","broken","500","400","crash"].some(w=>low.includes(w))&&text.length>20) type="blocker";
+          else if(text.includes("\u2705")||text.includes("\uD83C\uDFAF")||low.includes("yesterday")) type="standup";
+          notifs.push({id:m.ts,ts:m.ts,channel:ch.name,channelId:ch.id,color:ch.color,channelType:ch.type,user:uname(m.user),avatar:uav(m.user)||null,uid:m.user,text:text.substring(0,300),date:dt.date,time:dt.time,iso:dt.iso,type});
+        }
+      }catch(e){}
+    }
+    notifs.sort((a,b)=>parseFloat(b.ts)-parseFloat(a.ts));
+    res.json({ok:true,notifications:notifs,count:notifs.length});
+  }catch(e){res.status(500).json({error:e.message});}
+});
 
 app.get("*", (q,s)=>s.sendFile(path.join(__dirname,"public","index.html")));
 
