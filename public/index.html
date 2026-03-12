@@ -523,7 +523,7 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
   </div>
 </div>
 
-<div id="loading">
+<div id="loading" style="display:none">
   <div class="ld-logo">THE MOK CO.</div>
   <div class="ld-sub">COMMAND CENTER</div>
   <div class="ld-track"><div class="ld-bar"></div></div>
@@ -1176,8 +1176,8 @@ function authHeaders(){
   return authToken ? {'x-auth-token': authToken} : {};
 }
 
-function showLogin(){ document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('loading').style.display='none'; }
-function hideLogin(){ document.getElementById('login-screen').classList.add('hidden'); }
+function showLogin(){ document.getElementById('login-screen').classList.remove('hidden'); const l=document.getElementById('loading'); l.style.opacity='0'; l.style.display='none'; }
+function hideLogin(){ document.getElementById('login-screen').classList.add('hidden'); document.getElementById('loading').style.display='none'; }
 
 function togglePass(){
   const p=document.getElementById('l-pass');
@@ -1214,8 +1214,6 @@ async function doLogout(){
   try{await fetch('/api/logout',{method:'POST',headers:authHeaders()});}catch(e){}
   authToken=null;
   localStorage.removeItem('mok_token');
-  document.getElementById('loading').style.display='flex';
-  document.getElementById('loading').style.opacity='1';
   showLogin();
   document.getElementById('l-user').value='';
   document.getElementById('l-pass').value='';
@@ -1225,15 +1223,21 @@ async function doLogout(){
 let prevTs=null;
 async function load(silent){
   try{
-    if(!silent) document.getElementById('ldmsg').textContent='Fetching Slack data…';
+    if(!silent){
+      // Show subtle loading state in content while fetching
+      document.getElementById('srow').innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-family:JetBrains Mono;font-size:10px;letter-spacing:2px">LOADING…</div>';
+    }
     const r=await fetch('/api/data',{headers:authHeaders()});
     if(r.status===401){showLogin();return;}
     const d=await r.json();
-    if(!silent){render(d);setTimeout(()=>{const l=document.getElementById('loading');l.style.opacity='0';setTimeout(()=>l.style.display='none',400);},300);}
+    if(!silent){render(d);}
     else if(d.lastUpdated!==prevTs){render(d);if(prevTs)toast('🔄 Dashboard updated');}
     prevTs=d.lastUpdated;
   }catch(e){
-    if(!silent){document.getElementById('ldmsg').textContent='Connection error…';setTimeout(()=>load(false),3000);}
+    if(!silent){
+      document.getElementById('srow').innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--red);font-size:12px">⚠ Connection error — retrying…</div>';
+      setTimeout(()=>load(false),3000);
+    }
   }
 }
 
