@@ -413,6 +413,79 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
 .nm-footer-txt{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);}
 .nm-clear{font-family:'JetBrains Mono';font-size:9px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;transition:color .15s;}
 .nm-clear:hover{color:var(--white);}
+
+/* ═══════════════════════════════════════════════════════ MEETINGS */
+.rec-center{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:18px;}
+.rec-wave{display:flex;align-items:flex-end;gap:3px;height:40px;}
+.rec-bar{width:4px;border-radius:2px;background:var(--red);transform-origin:bottom;animation:none;}
+.rec-bar.active{animation:wavebar var(--spd,.6s) ease-in-out infinite alternate;}
+@keyframes wavebar{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+.rec-timer{font-family:'JetBrains Mono';font-size:32px;color:var(--white);letter-spacing:4px;font-weight:300;}
+.rec-status{font-family:'JetBrains Mono';font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.rec-btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.rbtn{display:flex;align-items:center;gap:7px;padding:10px 22px;border-radius:30px;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:15px;letter-spacing:1.5px;transition:all .18s;}
+.rbtn:disabled{opacity:.4;cursor:not-allowed;}
+.rbtn-rec{background:var(--red);color:#fff;}
+.rbtn-rec:hover:not(:disabled){box-shadow:0 4px 18px rgba(239,79,79,.4);transform:translateY(-1px);}
+.rbtn-stop{background:var(--card2);color:var(--text);border:1px solid var(--line2);}
+.rbtn-stop:hover:not(:disabled){background:var(--card3);}
+.rbtn-upload{background:var(--card2);color:var(--blue);border:1px solid rgba(79,144,247,.3);}
+.rbtn-upload:hover:not(:disabled){background:rgba(79,144,247,.08);}
+.rbtn-new-meet{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;}
+.rbtn-new-meet:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.rec-title-row{display:flex;gap:8px;width:100%;max-width:440px;}
+.rec-title-inp{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:9px 13px;color:var(--text);font-family:'DM Sans';font-size:13px;outline:none;transition:border-color .2s;}
+.rec-title-inp:focus{border-color:var(--blue);}
+.processing-box{background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:28px;text-align:center;margin-bottom:18px;display:none;}
+.processing-box.show{display:block;}
+.proc-spinner{width:40px;height:40px;border:3px solid var(--line2);border-top-color:var(--blue);border-radius:50%;animation:rot .8s linear infinite;margin:0 auto 14px;}
+.proc-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted);letter-spacing:1px;}
+.proc-step{font-size:13px;color:var(--text);margin-top:5px;}
+.meeting-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px;transition:border-color .18s;}
+.meeting-card:hover{border-color:var(--line2);}
+.mc-hdr{padding:13px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);cursor:pointer;}
+.mc-title{font-family:'Bebas Neue';font-size:17px;letter-spacing:1px;color:var(--white);}
+.mc-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px;}
+.mc-pill{font-family:'JetBrains Mono';font-size:8.5px;padding:2px 8px;border-radius:3px;border:1px solid var(--line);color:var(--muted);}
+.mc-sentiment{padding:2px 8px;border-radius:3px;border:1px solid;font-family:'JetBrains Mono';font-size:8.5px;}
+.mc-sentiment.positive{background:rgba(45,207,158,.07);color:var(--green);border-color:rgba(45,207,158,.2);}
+.mc-sentiment.neutral{background:rgba(79,144,247,.07);color:var(--blue);border-color:rgba(79,144,247,.2);}
+.mc-sentiment.concerned{background:rgba(239,79,79,.07);color:var(--red);border-color:rgba(239,79,79,.2);}
+.mc-actions{display:flex;gap:5px;flex-shrink:0;}
+.mc-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-family:'JetBrains Mono';font-size:8.5px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.mc-btn:hover{border-color:var(--line2);color:var(--text);}
+.mc-btn.slack{border-color:rgba(45,207,158,.2);color:var(--green);}
+.mc-btn.slack:hover{background:rgba(45,207,158,.07);}
+.mc-btn.del{border-color:rgba(239,79,79,.15);color:var(--red);}
+.mc-btn.del:hover{background:rgba(239,79,79,.07);}
+.mc-body{padding:14px 16px;display:none;}
+.mc-body.open{display:block;}
+.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+@media(max-width:700px){.mc-grid{grid-template-columns:1fr;}}
+.mc-section{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:11px 13px;}
+.mc-section-lbl{font-family:'Bebas Neue';font-size:12px;letter-spacing:1px;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.mc-summary{font-size:12.5px;color:var(--body);line-height:1.7;}
+.mc-list{display:flex;flex-direction:column;gap:4px;}
+.mc-li{font-size:11.5px;color:var(--text);padding:5px 9px;background:var(--card3);border-radius:5px;line-height:1.5;}
+.mc-li .assignee{font-size:10px;color:var(--blue);margin-left:6px;font-weight:600;}
+.mc-li .priority{font-family:'JetBrains Mono';font-size:8px;padding:1px 5px;border-radius:2px;margin-left:5px;}
+.mc-li .priority.high{background:rgba(239,79,79,.1);color:var(--red);}
+.mc-li .priority.medium{background:rgba(245,166,35,.1);color:var(--amber);}
+.mc-li .priority.low{background:rgba(45,207,158,.1);color:var(--green);}
+.transcript-box{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;max-height:320px;overflow-y:auto;}
+.transcript-lbl{font-family:'Bebas Neue';font-size:12px;letter-spacing:1px;color:var(--muted);margin-bottom:9px;}
+.utterance{display:flex;gap:9px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.utterance:last-child{border-bottom:none;margin-bottom:0;}
+.utt-speaker{font-family:'JetBrains Mono';font-size:8.5px;color:var(--blue);min-width:68px;font-weight:600;padding-top:2px;flex-shrink:0;}
+.utt-time{font-family:'JetBrains Mono';font-size:7.5px;color:var(--dim);min-width:40px;padding-top:3px;flex-shrink:0;}
+.utt-text{font-size:12px;color:var(--body);line-height:1.6;}
+.raw-transcript{font-size:12px;color:var(--body);line-height:1.85;white-space:pre-wrap;}
+.upload-zone{border:2px dashed var(--line2);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card2);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:rgba(79,144,247,.04);}
+.upload-zone input{display:none;}
+.upload-zone-icon{font-size:28px;margin-bottom:8px;}
+.upload-zone-lbl{font-size:13px;color:var(--text);margin-bottom:4px;}
+.upload-zone-sub{font-family:'JetBrains Mono';font-size:9px;color:var(--dim);}
 /* mobile tweaks */
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(3,1fr);}.hdr-time,.hdr-upd{display:none;}.hdr-search{max-width:160px;}}
 </style>
@@ -527,6 +600,7 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
       <button class="si" onclick="nav('analytics',this)" title="Analytics"><span class="si-icon">📊</span><span class="si-lbl">Analytics</span></button>
       <button class="si" onclick="nav('sprint',this)" title="Sprint"><span class="si-icon">📅</span><span class="si-lbl">Sprint</span></button>
       <button class="si" onclick="nav('team',this)" title="Team"><span class="si-icon">👥</span><span class="si-lbl">Team</span></button>
+      <button class="si" onclick="nav('meetings',this)" title="Meetings"><span class="si-icon">🎙️</span><span class="si-lbl">Meetings</span></button>
     </div>
     <button class="stog" id="stog" onclick="toggleSB()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
@@ -691,6 +765,7 @@ function nav(id,el){
   if(vEl) vEl.classList.add('on');
   document.getElementById('gsearch').value='';
   if(id==='analytics'&&gData) renderAnalytics();
+  if(id==='meetings') loadMeetings();
   if(id==='sprint'&&gData) renderSprint();
   if(id==='kanban'&&gData) renderKanban();
 }
@@ -1126,6 +1201,7 @@ async function doLogin(){
       hideLogin();
       load(false);
       setTimeout(()=>loadNotifications(false), 1500);
+      loadMeetings();
     } else {
       err.textContent='Invalid username or password.';err.classList.add('show');
       document.getElementById('l-pass').value='';
@@ -1183,7 +1259,8 @@ function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.s
     try{
       const r=await fetch('/api/auth/check',{headers:{'x-auth-token':authToken}});
       const d=await r.json();
-      if(d.ok){ load(false); setTimeout(()=>loadNotifications(false), 1500); }
+      if(d.ok){ load(false); setTimeout(()=>loadNotifications(false), 1500);
+      loadMeetings(); }
       else{ authToken=null;localStorage.removeItem('mok_token');showLogin(); }
     }catch(e){ showLogin(); }
   } else { showLogin(); }
@@ -1191,6 +1268,242 @@ function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.s
 
 setInterval(()=>{ load(true); loadNotifications(true); },30000);
 setInterval(()=>{const n=new Date();document.getElementById('htime').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});},30000);
+
+
+// ── MEETINGS ──────────────────────────────────────────────────────────────────
+let mediaRecorder = null;
+let audioChunks = [];
+let recInterval = null;
+let recSeconds = 0;
+let recStream = null;
+let meetingsData = [];
+
+function recTimerFmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+
+function setRecState(state){
+  // states: idle | recording | processing
+  const btnRec  = document.getElementById('btnRecord');
+  const btnStop = document.getElementById('btnStop');
+  const status  = document.getElementById('recStatus');
+  const bars    = document.querySelectorAll('.rec-bar');
+  if(state==='idle'){
+    btnRec.disabled=false; btnStop.disabled=true;
+    status.textContent='Ready to record';
+    status.style.color='var(--muted)';
+    bars.forEach(b=>b.classList.remove('active'));
+    document.getElementById('recTimer').textContent='00:00';
+  } else if(state==='recording'){
+    btnRec.disabled=true; btnStop.disabled=false;
+    status.textContent='● Recording…';
+    status.style.color='var(--red)';
+    bars.forEach(b=>b.classList.add('active'));
+  } else if(state==='processing'){
+    btnRec.disabled=true; btnStop.disabled=true;
+    status.textContent='Processing…';
+    status.style.color='var(--blue)';
+    bars.forEach(b=>b.classList.remove('active'));
+  }
+}
+
+async function startRecording(){
+  try{
+    recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(recStream, {mimeType});
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.start(250);
+    recSeconds = 0;
+    setRecState('recording');
+    recInterval = setInterval(()=>{ recSeconds++; document.getElementById('recTimer').textContent=recTimerFmt(recSeconds); }, 1000);
+  } catch(e){
+    if(e.name==='NotAllowedError') toast('❌ Microphone permission denied. Please allow mic access.');
+    else toast('❌ Could not start recording: '+e.message);
+  }
+}
+
+function stopRecording(){
+  if(!mediaRecorder) return;
+  clearInterval(recInterval);
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(audioChunks, {type: mediaRecorder.mimeType || 'audio/webm'});
+    recStream?.getTracks().forEach(t=>t.stop());
+    processAudioBlob(blob, mediaRecorder.mimeType || 'audio/webm');
+  };
+  mediaRecorder.stop();
+  setRecState('processing');
+}
+
+function uploadAudio(input){
+  const file = input.files[0];
+  if(!file) return;
+  // Update title placeholder if empty
+  if(!document.getElementById('meetingTitle').value) {
+    document.getElementById('meetingTitle').value = file.name.replace(/\.[^.]+$/, '');
+  }
+  processAudioBlob(file, file.type || 'audio/mp4');
+  input.value = '';
+}
+
+async function processAudioBlob(blob, mimeType){
+  setRecState('processing');
+  document.getElementById('procBox').classList.add('show');
+  document.getElementById('procStep').textContent = '🔊 Sending audio to Deepgram…';
+
+  try{
+    const title = document.getElementById('meetingTitle').value.trim() || 'Team Meeting';
+    const arrayBuf = await blob.arrayBuffer();
+
+    document.getElementById('procStep').textContent = '🧠 Transcribing Arabic + English…';
+
+    const resp = await fetch('/api/meetings/transcribe', {
+      method: 'POST',
+      headers: {
+        ...authHeaders(),
+        'Content-Type': mimeType,
+        'x-meeting-title': encodeURIComponent(title)
+      },
+      body: arrayBuf
+    });
+
+    if(resp.status === 401){ showLogin(); return; }
+    if(!resp.ok){
+      const err = await resp.json();
+      throw new Error(err.error || 'Transcription failed');
+    }
+
+    document.getElementById('procStep').textContent = '🤖 Analyzing transcript with AI…';
+    const data = await resp.json();
+
+    document.getElementById('procBox').classList.remove('show');
+    setRecState('idle');
+    document.getElementById('meetingTitle').value = '';
+
+    // Prepend to local store
+    meetingsData.unshift(data.meeting);
+    renderMeetings();
+    toast('✅ Meeting transcribed! '+( data.meeting.analysis?.tasks?.length||0)+' tasks extracted.');
+
+    // Auto-expand the new meeting
+    setTimeout(()=>{ const el=document.getElementById('mc-'+data.meeting.id); if(el) el.querySelector('.mc-body').classList.add('open'); }, 100);
+
+  } catch(e){
+    document.getElementById('procBox').classList.remove('show');
+    setRecState('idle');
+    toast('❌ Error: '+e.message);
+  }
+}
+
+async function loadMeetings(){
+  if(!authToken) return;
+  try{
+    const r = await fetch('/api/meetings', {headers: authHeaders()});
+    if(r.status===401){ showLogin(); return; }
+    const d = await r.json();
+    if(d.ok){ meetingsData = d.meetings||[]; renderMeetings(); }
+  }catch(e){}
+}
+
+function renderMeetings(){
+  const w = document.getElementById('meetingsList');
+  if(!meetingsData.length){
+    w.innerHTML='<div style="padding:32px;text-align:center;color:var(--muted);font-size:12px">No meetings yet. Hit Record above to start.</div>';
+    return;
+  }
+  w.innerHTML = meetingsData.map(m => {
+    const a = m.analysis || {};
+    const dur = m.duration >= 60 ? Math.floor(m.duration/60)+'m '+String(m.duration%60).padStart(2,'0')+'s' : (m.duration||0)+'s';
+    const sentClass = a.sentiment || 'neutral';
+
+    const tasksHtml = (a.tasks||[]).length ? `<div class="mc-section">
+      <div class="mc-section-lbl">✅ Tasks (${a.tasks.length})</div>
+      <div class="mc-list">${a.tasks.map(t=>`<div class="mc-li">${xe(t.text)}${t.assignee?`<span class="assignee">→ ${xe(t.assignee)}</span>`:''}${t.priority?`<span class="priority ${t.priority}">${t.priority}</span>`:''}</div>`).join('')}</div>
+    </div>` : '';
+
+    const blockersHtml = (a.blockers||[]).length ? `<div class="mc-section">
+      <div class="mc-section-lbl" style="color:var(--red)">🚨 Blockers (${a.blockers.length})</div>
+      <div class="mc-list">${a.blockers.map(b=>`<div class="mc-li" style="border-left:2px solid var(--red)">${xe(b.text)}${b.owner?`<span class="assignee" style="color:var(--red)">${xe(b.owner)}</span>`:''}</div>`).join('')}</div>
+    </div>` : '';
+
+    const decisionsHtml = (a.decisions||[]).length ? `<div class="mc-section">
+      <div class="mc-section-lbl" style="color:var(--violet)">📌 Decisions</div>
+      <div class="mc-list">${a.decisions.map(d=>`<div class="mc-li">${xe(d)}</div>`).join('')}</div>
+    </div>` : '';
+
+    const topicsHtml = (a.topics||[]).length ? `<div class="mc-section">
+      <div class="mc-section-lbl">💬 Topics</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${a.topics.map(t=>`<span class="badge badge-info">${xe(t)}</span>`).join('')}</div>
+    </div>` : '';
+
+    // Speaker transcript
+    const hasUtterances = m.speakerLines && m.speakerLines.length > 0;
+    const transcriptHtml = hasUtterances
+      ? m.speakerLines.map(u=>`<div class="utterance">
+          <span class="utt-speaker">${xe(u.speaker)}</span>
+          <span class="utt-time">${u.start?u.start.toFixed(1)+'s':''}</span>
+          <span class="utt-text">${xe(u.text)}</span>
+        </div>`).join('')
+      : `<div class="raw-transcript">${xe(m.transcript||'')}</div>`;
+
+    return `<div class="meeting-card" id="mc-${m.id}">
+      <div class="mc-hdr" onclick="toggleMC('${m.id}')">
+        <div style="flex:1;min-width:0">
+          <div class="mc-title">${xe(m.title||'Meeting')}</div>
+          <div class="mc-meta">
+            <span class="mc-pill">📅 ${xe(m.date)}</span>
+            <span class="mc-pill">⏱ ${dur}</span>
+            ${m.wordCount?`<span class="mc-pill">${m.wordCount} words</span>`:''}
+            ${a.tasks?.length?`<span class="mc-pill" style="color:var(--green)">✅ ${a.tasks.length} tasks</span>`:''}
+            ${a.blockers?.length?`<span class="mc-pill" style="color:var(--red)">🚨 ${a.blockers.length} blockers</span>`:''}
+            ${a.sentiment?`<span class="mc-sentiment ${sentClass}">${sentClass}</span>`:''}
+          </div>
+          ${a.summary?`<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">${xe(a.summary.substring(0,180))}${a.summary.length>180?'…':''}</div>`:''}
+        </div>
+        <div class="mc-actions" onclick="event.stopPropagation()">
+          <button class="mc-btn slack" onclick="postMeetingToSlack('${m.id}')">📤 Slack</button>
+          <button class="mc-btn del" onclick="deleteMeeting('${m.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="mc-body" id="mcb-${m.id}">
+        ${a.summary?`<div class="mc-section" style="margin-bottom:10px"><div class="mc-section-lbl">📋 Summary</div><div class="mc-summary">${xe(a.summary)}</div></div>`:''}
+        <div class="mc-grid">
+          ${tasksHtml}${blockersHtml}${decisionsHtml}${topicsHtml}
+        </div>
+        ${a.attendees_mentioned?.length?`<div style="margin-bottom:10px;font-size:11px;color:var(--muted)">👥 Mentioned: <strong style="color:var(--text)">${a.attendees_mentioned.map(xe).join(', ')}</strong></div>`:''}
+        <div class="transcript-box">
+          <div class="transcript-lbl">Full Transcript ${hasUtterances?'(with speaker labels)':''}</div>
+          ${transcriptHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMC(id){
+  const body = document.getElementById('mcb-'+id);
+  if(body) body.classList.toggle('open');
+}
+
+async function postMeetingToSlack(id){
+  toast('⏳ Posting to #standup…');
+  try{
+    const r = await fetch('/api/meetings/'+id+'/post-slack', {method:'POST', headers: authHeaders()});
+    if(r.status===401){ showLogin(); return; }
+    const d = await r.json();
+    if(d.ok) toast('✅ Meeting summary posted to #standup!');
+    else toast('❌ Failed to post: '+(d.error||'unknown'));
+  }catch(e){ toast('❌ Error: '+e.message); }
+}
+
+async function deleteMeeting(id){
+  if(!confirm('Delete this meeting?')) return;
+  try{
+    await fetch('/api/meetings/'+id, {method:'DELETE', headers: authHeaders()});
+    meetingsData = meetingsData.filter(m=>m.id!==id);
+    renderMeetings();
+    toast('🗑 Meeting deleted');
+  }catch(e){ toast('❌ Error deleting'); }
+}
 
 // ── NOTIFICATIONS ──────────────────────────────────────────────────────────
 let nmFilter_val = 'all';
