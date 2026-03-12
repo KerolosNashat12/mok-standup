@@ -616,7 +616,7 @@ header{position:sticky;top:0;z-index:300;height:52px;background:rgba(7,8,16,.9);
     </div>
 
     <!-- OVERVIEW -->
-    <div id="v-overview" class="view on">
+    <div id="v-overview" class="view">
       <div class="stats-row" id="srow"></div>
       <div class="sec-lbl">Active Projects</div>
       <div class="ov-grid" id="ovgrid"></div>
@@ -759,10 +759,10 @@ function isInProg(t){return !isDone(t)&&t.updates&&t.updates.some(u=>['progress'
 function nav(id,el){
   document.querySelectorAll('.si').forEach(b=>b.classList.remove('on'));
   if(el) el.classList.add('on');
-  document.querySelectorAll('.view').forEach(v=>{v.classList.remove('on');v.style.display='';});
+  document.querySelectorAll('.view').forEach(v=>{v.classList.remove('on');v.style.display='none';});
   document.getElementById('v-search').style.display='none';
   const vEl=document.getElementById('v-'+id);
-  if(vEl) vEl.classList.add('on');
+  if(vEl){vEl.classList.add('on');vEl.style.display='block';}
   document.getElementById('gsearch').value='';
   if(id==='analytics'&&gData) renderAnalytics();
   if(id==='meetings') loadMeetings();
@@ -1132,11 +1132,12 @@ function closeMemberModal(e){if(e.target===document.getElementById('memberModal'
 function doSearch(q){
   if(!q||!q.trim()){
     document.getElementById('v-search').style.display='none';
-    document.querySelectorAll('.view').forEach(v=>{if(v.id!=='v-search')v.classList.remove('on');});
-    document.querySelector('.si.on')?.click()||document.querySelector('.si')?.click();
+    document.querySelectorAll('.view').forEach(v=>{v.classList.remove('on');v.style.display='none';});
+    const activeBtn=document.querySelector('.si.on')||document.querySelector('.si');
+    if(activeBtn) activeBtn.click();
     return;
   }
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.view').forEach(v=>{v.classList.remove('on');v.style.display='none';});
   document.getElementById('v-search').style.display='block';
   const low=q.toLowerCase();
   if(!gData){document.getElementById('sr-body').innerHTML='<div style="color:var(--muted);padding:20px">Loading…</div>';return;}
@@ -1166,6 +1167,10 @@ function render(d){
   renderTasks();
   renderBlockers();
   renderTeam(d.team||{});
+  // Ensure the active view is visible
+  const activeView = document.querySelector('.view.on') || document.getElementById('v-overview');
+  document.querySelectorAll('.view').forEach(v=>{v.style.display='none';});
+  if(activeView){activeView.style.display='block';activeView.classList.add('on');}
 }
 
 // ── LOAD & REFRESH ─────────────────────────────────────────────────────────
@@ -1199,6 +1204,7 @@ async function doLogin(){
       authToken=d.token;
       localStorage.setItem('mok_token',authToken);
       hideLogin();
+      nav('overview', document.querySelector('.si'));
       load(false);
       setTimeout(()=>loadNotifications(false), 1500);
       loadMeetings();
@@ -1263,8 +1269,7 @@ function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.s
     try{
       const r=await fetch('/api/auth/check',{headers:{'x-auth-token':authToken}});
       const d=await r.json();
-      if(d.ok){ load(false); setTimeout(()=>loadNotifications(false), 1500);
-      loadMeetings(); }
+      if(d.ok){ nav('overview', document.querySelector('.si')); load(false); setTimeout(()=>loadNotifications(false), 1500); loadMeetings(); }
       else{ authToken=null;localStorage.removeItem('mok_token');showLogin(); }
     }catch(e){ showLogin(); }
   } else { showLogin(); }
