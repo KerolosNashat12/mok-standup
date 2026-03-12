@@ -413,6 +413,207 @@ app.get("/api/notifications", requireAuth, async(req,res)=>{
   }catch(e){res.status(500).json({error:e.message});}
 });
 
+// ── MEETINGS ─────────────────────────────────────────────────────────────────
+const DEEPGRAM_KEY = process.env.DEEPGRAM_KEY || "21f78bfd8a6bf65f0377cdc78c89f4686cefa62e";
+let meetingsStore = []; // in-memory store (persists until redeploy)
+
+// Transcribe audio via Deepgram Nova-3 (Arabic + English)
+function deepgramTranscribe(audioBuffer, mimetype) {
+  return new Promise((resolve, reject) => {
+    const params = "model=nova-3&language=multi&punctuate=true&diarize=true&smart_format=true&utterances=true&filler_words=false";
+    const opts = {
+      hostname: "api.deepgram.com",
+      path: "/v1/listen?" + params,
+      method: "POST",
+      headers: {
+        "Authorization": "Token " + DEEPGRAM_KEY,
+        "Content-Type": mimetype || "audio/webm",
+        "Content-Length": audioBuffer.length
+      }
+    };
+    const req = https.request(opts, r => {
+      let d = "";
+      r.on("data", c => d += c);
+      r.on("end", () => {
+        try { resolve(JSON.parse(d)); } catch(e) { reject(e); }
+      });
+    });
+    req.on("error", reject);
+    req.write(audioBuffer);
+    req.end();
+  });
+}
+
+// Analyze transcript with Claude API (via Anthropic)
+function analyzeTranscript(transcript, title) {
+  return new Promise((resolve, reject) => {
+    const prompt = `You are an expert meeting analyst. Analyze this meeting transcript and extract structured information.
+
+Meeting Title: ${title || "Team Meeting"}
+Transcript:
+${transcript}
+
+Respond ONLY with a valid JSON object (no markdown, no backticks) in this exact format:
+{
+  "summary": "2-3 sentence overview of the meeting",
+  "attendees_mentioned": ["name1", "name2"],
+  "tasks": [
+    {"text": "task description", "assignee": "person name or null", "priority": "high|medium|low"}
+  ],
+  "blockers": [
+    {"text": "blocker description", "owner": "person name or null"}
+  ],
+  "decisions": ["decision 1", "decision 2"],
+  "action_items": ["action item 1", "action item 2"],
+  "topics": ["topic1", "topic2"],
+  "sentiment": "positive|neutral|concerned"
+}`;
+
+    const body = JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }]
+    });
+
+    const opts = {
+      hostname: "api.anthropic.com",
+      path: "/v1/messages",
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY || "",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "content-length": Buffer.byteLength(body)
+      }
+    };
+
+    const req = https.request(opts, r => {
+      let d = "";
+      r.on("data", c => d += c);
+      r.on("end", () => {
+        try {
+          const resp = JSON.parse(d);
+          const text = resp.content?.[0]?.text || "{}";
+          const clean = text.replace(/```json|```/g, "").trim();
+          resolve(JSON.parse(clean));
+        } catch(e) { resolve(null); }
+      });
+    });
+    req.on("error", () => resolve(null));
+    req.write(body);
+    req.end();
+  });
+}
+
+// Upload audio → transcribe → analyze
+app.post("/api/meetings/transcribe", requireAuth, express.raw({ type: "*/*", limit: "50mb" }), async(req, res) => {
+  try {
+    const mimetype = req.headers["content-type"] || "audio/webm";
+    const title = req.headers["x-meeting-title"] || "Team Meeting";
+    const audioBuffer = req.body;
+
+    if (!audioBuffer || audioBuffer.length < 100)
+      return res.status(400).json({ error: "No audio data received" });
+
+    // 1. Transcribe with Deepgram
+    const dgResult = await deepgramTranscribe(audioBuffer, mimetype);
+    if (!dgResult?.results) return res.status(500).json({ error: "Deepgram transcription failed", details: dgResult });
+
+    const transcript = dgResult.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+    const words = dgResult.results?.channels?.[0]?.alternatives?.[0]?.words || [];
+    const utterances = dgResult.results?.utterances || [];
+    const duration = dgResult.metadata?.duration || 0;
+
+    if (!transcript.trim()) return res.status(422).json({ error: "No speech detected in audio" });
+
+    // Build speaker-labeled transcript from utterances
+    const speakerLines = utterances.map(u => ({
+      speaker: "Speaker " + (u.speaker + 1),
+      text: u.transcript,
+      start: u.start,
+      end: u.end
+    }));
+
+    // 2. Analyze with AI
+    const analysis = await analyzeTranscript(transcript, title);
+
+    // 3. Store meeting
+    const meeting = {
+      id: Date.now().toString(),
+      title,
+      date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+      iso: new Date().toISOString(),
+      duration: Math.round(duration),
+      transcript,
+      speakerLines,
+      wordCount: words.length,
+      analysis: analysis || {},
+      audioSize: audioBuffer.length
+    };
+
+    meetingsStore.unshift(meeting);
+    if (meetingsStore.length > 50) meetingsStore = meetingsStore.slice(0, 50);
+
+    res.json({ ok: true, meeting });
+  } catch(e) {
+    console.error("Transcribe error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get all meetings
+app.get("/api/meetings", requireAuth, (req, res) => {
+  res.json({ ok: true, meetings: meetingsStore });
+});
+
+// Get single meeting
+app.get("/api/meetings/:id", requireAuth, (req, res) => {
+  const m = meetingsStore.find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: "Not found" });
+  res.json({ ok: true, meeting: m });
+});
+
+// Delete meeting
+app.delete("/api/meetings/:id", requireAuth, (req, res) => {
+  meetingsStore = meetingsStore.filter(x => x.id !== req.params.id);
+  res.json({ ok: true });
+});
+
+// Post meeting summary to Slack
+app.post("/api/meetings/:id/post-slack", requireAuth, async(req, res) => {
+  try {
+    const m = meetingsStore.find(x => x.id === req.params.id);
+    if (!m) return res.status(404).json({ error: "Not found" });
+    const a = m.analysis || {};
+    const dur = m.duration >= 60 ? Math.floor(m.duration/60)+"m "+( m.duration%60)+"s" : m.duration+"s";
+
+    let msg = `*🎙 Meeting Summary — ${m.title}*\n`;
+    msg += `📅 ${m.date} · ${m.time} · Duration: ${dur}\n\n`;
+    if (a.summary) msg += `*Summary:*\n${a.summary}\n\n`;
+    if (a.tasks?.length) {
+      msg += `*✅ Tasks (${a.tasks.length}):*\n`;
+      a.tasks.forEach((t,i) => msg += `${i+1}. ${t.text}${t.assignee?" → *"+t.assignee+"*":""}\n`);
+      msg += "\n";
+    }
+    if (a.blockers?.length) {
+      msg += `*🚨 Blockers (${a.blockers.length}):*\n`;
+      a.blockers.forEach(b => msg += `• ${b.text}${b.owner?" ("+b.owner+")":""}\n`);
+      msg += "\n";
+    }
+    if (a.decisions?.length) {
+      msg += `*📌 Decisions:*\n`;
+      a.decisions.forEach(d => msg += `• ${d}\n`);
+      msg += "\n";
+    }
+    if (a.attendees_mentioned?.length) msg += `*👥 Mentioned:* ${a.attendees_mentioned.join(", ")}\n\n`;
+    msg += `_Posted from Mok Command Center_`;
+
+    await slackPost("chat.postMessage", { channel: STANDUP_CHANNEL, text: msg });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get("*", (q,s)=>s.sendFile(path.join(__dirname,"public","index.html")));
 
 // Cron: refresh every 2 min, digest at 9am Cairo time (UTC+2 = 7am UTC)
